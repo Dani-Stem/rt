@@ -1,196 +1,59 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>RealTop</title>
-    <link rel="stylesheet" href="/static/style.css" />
-  </head>
 
-  <body>
-    <header>
-      <h1>
-        <a href="/">RealTop</a>
-      </h1>
-      <navbar>
-        <a href = ""> TOP100 </a>
-        <a href = ""> NEW RELEASES </a>
-        <a href = ""> BROWSE </a>
-        <a href = ""> SEARCH </a>
-        <a href = ""> ADD </a>
-      </navbar>
-      <nav>
-        <a href="">login</a>
-      </nav>
-    </header>
+<head>
+  <meta charset="UTF-8" />
+  <title>RealTop</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
 
-    <main>
+<body>
+  <header>
+    <h1>
+      <a href="/">RealTop</a>
+    </h1>
+    <navbar>
+      <a href=""> TOP100 </a>
+      <a href=""> NEW RELEASES </a>
+      <a href=""> BROWSE </a>
+      <a href=""> SEARCH </a>
+      <a href="/add"> ADD </a>
+    </navbar>
+    <nav>
+      <a href="">login</a>
+    </nav>
+  </header>
 
-      <h2>Add a Rating</h2>
-      <form action="/add" method="post">
+  <main>
+    <h2>Ratings</h2>
+    {% if ratings %}
+    <ul>
+      {% for rating in ratings %}
+      <li>
+        <span>
+          <strong>{{ rating[1] }}</strong>: {{ rating[2] }}<br>
+          <small>
+            Lyrics: {{ rating[3] }} | Beat: {{ rating[4] }} | Flow: {{ rating[5] }} | Melody: {{ rating[6] }} |
+            Cohesive: {{ rating[7] }}
+          </small>
+        </span>
+        <span>
+          <a href="/edit/{{ rating[0] }}">Edit</a>
+          <form action="/delete/{{ rating[0] }}" method="post" style="display: inline">
+            <button type="submit" onclick="return confirm('Are you sure you want to delete this rating?')">
+              ×
+            </button>
+          </form>
+        </span>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <p style="color: #6b7280; font-style: italic">
+      No ratings yet. Click "ADD" to add your first rating!
+    </p>
+    {% endif %}
+  </main>
+</body>
 
-        <label for="type">Rating Type:</label>
-        <select name="type" id="type">
-          <option value="Artist">Artist</option>
-          <option value="Album">Album</option>
-          <option value="Song">Song</option>
-        </select>
-        <br><br>
-
-        <label for="rating_name">Artist or Album or Song Name:</label>
-        <input type="text" id="rating_name" name="rating_name"><br><br>
-
-        <p>Flow</p>
-        <input type="radio" id="flow1" name="flow" value="1">
-        <label for="flow1">1</label>
-        <input type="radio" id="flow2" name="flow" value="2">
-        <label for="flow2">2</label>
-        <input type="radio" id="flow3" name="flow" value="3">
-        <label for="flow3">3</label>
-        <input type="radio" id="flow4" name="flow" value="4">
-        <label for="flow3">4</label>
-        <input type="radio" id="flow5" name="flow" value="5">
-        <label for="flow3">5</label>
-        <input type="radio" id="flow6" name="flow" value="6">
-        <label for="flow3">6</label>
-        <input type="radio" id="flow7" name="flow" value="7">
-        <label for="flow3">7</label>
-        <input type="radio" id="flow8" name="flow" value="8">
-        <label for="flow3">8</label>
-        <input type="radio" id="flow9" name="flow" value="9">
-        <label for="flow3">9</label>
-        <input type="radio" id="flow10" name="flow" value="10">
-        <label for="flow3">10</label><br><br>
-        <p>Reason for Rating:</p>
-        <textarea
-          name="flow_reason"
-          rows="4"
-          cols="40"
-          placeholder="Write something..."
-        ></textarea
-        ><br />
-
-        <p>Lyrics</p>
-        <input type="radio" id="lyrics1" name="lyrics" value="1">
-        <label for="lyrics1">1</label>
-        <input type="radio" id="lyrics2" name="lyrics" value="2">
-        <label for="lyrics2">2</label>
-        <input type="radio" id="lyrics3" name="lyrics" value="3">
-        <label for="lyrics3">3</label>
-        <input type="radio" id="lyrics4" name="lyrics" value="4">
-        <label for="lyrics3">4</label>
-        <input type="radio" id="lyrics5" name="lyrics" value="5">
-        <label for="lyrics3">5</label>
-        <input type="radio" id="lyrics6" name="lyrics" value="6">
-        <label for="lyrics3">6</label>
-        <input type="radio" id="lyrics7" name="lyrics" value="7">
-        <label for="lyrics3">7</label>
-        <input type="radio" id="lyrics8" name="lyrics" value="8">
-        <label for="lyrics3">8</label>
-        <input type="radio" id="lyrics9" name="lyrics" value="9">
-        <label for="lyrics3">9</label>
-        <input type="radio" id="lyrics10" name="lyrics" value="10">
-        <label for="lyrics3">10</label><br><br>
-        <p>Reason for Rating:</p>
-        <textarea
-          name="lyrics_reason"
-          rows="4"
-          cols="40"
-          placeholder="Write something..."
-        ></textarea
-        ><br />
-
-        <p>melody</p>
-        <input type="radio" id="melody1" name="melody" value="1">
-        <label for="melody1">1</label>
-        <input type="radio" id="melody2" name="melody" value="2">
-        <label for="melody2">2</label>
-        <input type="radio" id="melody3" name="melody" value="3">
-        <label for="melody3">3</label>
-        <input type="radio" id="melody4" name="melody" value="4">
-        <label for="melody3">4</label>
-        <input type="radio" id="melody5" name="melody" value="5">
-        <label for="melody3">5</label>
-        <input type="radio" id="melody6" name="melody" value="6">
-        <label for="melody3">6</label>
-        <input type="radio" id="melody7" name="melody" value="7">
-        <label for="melody3">7</label>
-        <input type="radio" id="melody8" name="melody" value="8">
-        <label for="melody3">8</label>
-        <input type="radio" id="melody9" name="melody" value="9">
-        <label for="melody3">9</label>
-        <input type="radio" id="melody10" name="melody" value="10">
-        <label for="melody3">10</label><br><br>
-        <p>Reason for Rating:</p>
-        <textarea
-          name="melody_reason"
-          rows="4"
-          cols="40"
-          placeholder="Write something..."
-        ></textarea
-        ><br />
-
-        <p>cohesive</p>
-        <input type="radio" id="cohesive1" name="cohesive" value="1">
-        <label for="cohesive1">1</label>
-        <input type="radio" id="cohesive2" name="cohesive" value="2">
-        <label for="cohesive2">2</label>
-        <input type="radio" id="cohesive3" name="cohesive" value="3">
-        <label for="cohesive3">3</label>
-        <input type="radio" id="cohesive4" name="cohesive" value="4">
-        <label for="cohesive3">4</label>
-        <input type="radio" id="cohesive5" name="cohesive" value="5">
-        <label for="cohesive3">5</label>
-        <input type="radio" id="cohesive6" name="cohesive" value="6">
-        <label for="cohesive3">6</label>
-        <input type="radio" id="cohesive7" name="cohesive" value="7">
-        <label for="cohesive3">7</label>
-        <input type="radio" id="cohesive8" name="cohesive" value="8">
-        <label for="cohesive3">8</label>
-        <input type="radio" id="cohesive9" name="cohesive" value="9">
-        <label for="cohesive3">9</label>
-        <input type="radio" id="cohesive10" name="cohesive" value="10">
-        <label for="cohesive3">10</label><br><br>
-        <p>Reason for Rating:</p>
-        <textarea
-          name="cohesive_reason"
-          rows="4"
-          cols="40"
-          placeholder="Write something..."
-        ></textarea
-        ><br />
-        <br />
-        <button type="submit">Save</button>
-      </form>
-
-      <h2>Ratings</h2>
-      {% if ratings %}
-      <ul>
-        {% for rating_key, content in ratings %}
-        <li>
-          <span>#{{ loop.index }}: {{ content }}</span>
-          <span>
-            <a href="/edit/{{ rating_key }}">Edit</a>
-            <form
-              action="/delete/{{ rating_key }}"
-              method="post"
-              style="display: inline"
-            >
-              <button
-                type="submit"
-                onclick="return confirm('Are you sure you want to delete this rating?')"
-              >
-                ×
-              </button>
-            </form>
-          </span>
-        </li>
-        {% endfor %}
-      </ul>
-      {% else %}
-      <p style="color: #6b7280; font-style: italic">
-        No ratings yet. Click "Rate a Song" to add your first rating!
-      </p>
-      {% endif %}
-    </main>
-  </body>
 </html>
