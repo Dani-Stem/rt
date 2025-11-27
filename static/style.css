@@ -5,6 +5,30 @@ body {
   color: #f5f5f5;
 }
 
+.grid {
+  width: 100%;
+}
+
+.topbox_right{
+  border: 2px #202020;
+  width: 25%;
+  float: right;
+  background-color: #fff;
+  color: #000;
+  margin: 2.5%;
+  padding: 2.5%;
+}
+
+.topbox_left{
+  border: 2px #202020;
+  width: 55%;
+  float: left;
+  background-color: #fff;
+  color: #000;
+  margin: 2.5%;
+  padding: 2.5%;
+}
+
 header {
   background: #202020;
   padding: 1rem 2rem;
