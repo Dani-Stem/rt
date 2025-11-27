@@ -344,6 +344,11 @@ def home():
     ratings = get_ratings()
     return render_template("index.html", ratings=ratings)
 
+# Browse
+@app.route("/browse")
+def browse():
+    ratings = get_ratings()
+    return render_template("browse.html", ratings=ratings)
 
 # Add
 @app.route("/add", methods=["GET", "POST"])
