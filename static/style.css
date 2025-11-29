@@ -15,6 +15,35 @@
   font-size: 1.6rem;
 }
 
+.main_box{
+  width: 100%;
+  text-align: center;
+}
+
+.box_left{
+  float: left;
+  width: 23%;
+  margin: 2.5%;
+  padding: 2.5%;
+  background-color: #2d3748;
+}
+
+.box_middle{
+  float: left;
+  width: 23%;
+  margin: 2.5%;
+  padding: 2.5%;
+  background-color: #2d3748;
+}
+
+.box_right{
+  float: left;
+  width: 23%;
+  margin: 2.5%;
+  padding: 2.5%;
+  background-color: #2d3748;
+}
+
 .summary-pills {
   display: flex;
   gap: 0.5rem;

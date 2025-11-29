@@ -39,13 +39,18 @@
     </header>
 
     <main>
-      <h2>Welcome to RealTop</h2>
-      <p>Your music rating platform.</p>
-      {% if not current_user.is_authenticated %}
-      <p class="auth-hint" style="color: #6b7280; font-style: italic">
-        Sign up or log in to add a rating.
-      </p>
-      {% endif %}
+      <div class="main_box">
+        <div class="box_left">
+          <h3>Top100 for the Week:</h3>
+        </div>
+        <div class="box_middle">
+          <h3>Top100 New Releases:</h3>
+        </div>
+        <div class="box_right">
+          <h3>Top100 throwbacks:</h3>
+        </div>
+        
+      </div>
     </main>
   </body>
 </html>
