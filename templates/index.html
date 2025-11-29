@@ -1,55 +1,51 @@
 <!DOCTYPE html>
 <html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>RealTop</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
 
-<head>
-  <meta charset="UTF-8" />
-  <title>RealTop</title>
-  <link rel="stylesheet" href="/static/style.css" />
-</head>
+  <body>
+    <header>
+      <h1>
+        <a href="/">RealTop</a>
+      </h1>
+      <navbar>
+        <a href="">TOP100</a>
+        <span>•</span>
+        <a href="">NEW RELEASES</a>
+        <span>•</span>
+        <a href="/browse">BROWSE</a>
+        <span>•</span>
+        <a href="">SEARCH</a>
+        <span>•</span>
+        <a href="/add">ADD</a>
+      </navbar>
+      <nav>
+        {% if current_user.is_authenticated %} {% if current_user.profile_pic %}
+        <img class="avatar" src="{{ current_user.profile_pic }}" alt="Avatar" />
+        {% else %}
+        <span class="avatar-initial">{{ current_user.username[0]|upper }}</span>
+        {% endif %}
+        <a href="/profile" class="link-plain"
+          >Hi, {{ current_user.username }}</a
+        >
+        <a href="/logout" class="btn-auth">Log Out</a>
+        {% else %}
+        <a href="/auth" class="btn-auth">Sign Up / Log In</a>
+        {% endif %}
+      </nav>
+    </header>
 
-<body>
-  <header>
-    <h1>
-      <a href="/">RealTop</a>
-    </h1>
-    <navbar>
-      <a href=""> TOP100 </a>
-      <a href=""> NEW RELEASES </a>
-      <a href="/browse"> BROWSE </a>
-      <a href=""> SEARCH </a>
-      <a href="/add"> ADD </a>
-    </navbar>
-    <nav>
-      <a href="">login</a>
-    </nav>
-  </header>
-
-  <main>
-   
-    <div class="grid">
-      <div class="topbox_right">
-        <label for="username">username:</label>
-        <input type="text" id="username" name="username" required /><br /><br />
-        <label for="password">password:</label>
-        <input type="text" id="password" name="password" required /><br /><br />
-      </div>
-      <div class="topbox_left">
-        <p>featured ratings:</p>
-        <div class="featured_artist">
-          <div class="box">
-            1
-          </div>
-          <div class="box">
-            2
-          </div>
-          <div class="box">
-            3
-          </div>
-        </div>
-      </div>
-    </div>
-
-  </main>
-</body>
-
+    <main>
+      <h2>Welcome to RealTop</h2>
+      <p>Your music rating platform.</p>
+      {% if not current_user.is_authenticated %}
+      <p class="auth-hint" style="color: #6b7280; font-style: italic">
+        Sign up or log in to add a rating.
+      </p>
+      {% endif %}
+    </main>
+  </body>
 </html>

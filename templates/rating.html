@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Rating Details - RealTop</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+
+  <body>
+    <header>
+      <h1>
+        <a href="/">RealTop</a>
+      </h1>
+      <navbar>
+        <a href="">TOP100</a>
+        <span>•</span>
+        <a href="">NEW RELEASES</a>
+        <span>•</span>
+        <a href="/browse">BROWSE</a>
+        <span>•</span>
+        <a href="">SEARCH</a>
+        <span>•</span>
+        <a href="/add">ADD</a>
+      </navbar>
+      <nav>
+        {% if current_user.is_authenticated %} {% if current_user.profile_pic %}
+        <img class="avatar" src="{{ current_user.profile_pic }}" alt="Avatar" />
+        {% else %}
+        <span class="avatar-initial">{{ current_user.username[0]|upper }}</span>
+        {% endif %}
+        <a href="/profile" class="link-plain"
+          >Hi, {{ current_user.username }}</a
+        >
+        <a href="/logout" class="btn-auth">Log Out</a>
+        {% else %}
+        <a href="/auth" class="btn-auth">Sign Up / Log In</a>
+        {% endif %}
+      </nav>
+    </header>
+
+    <main class="rating-alt">
+      <section class="rating-summary">
+        <div class="summary-main">
+          <div style="display: flex; align-items: center; gap: 8px">
+            {% if owner %} {% if owner_pic %}
+            <img
+              class="avatar"
+              src="{{ owner_pic }}"
+              alt="{{ owner }} avatar"
+            />
+            {% else %}
+            <span class="avatar-initial">{{ owner[0]|upper }}</span>
+            {% endif %} {% endif %}
+            <div>
+              <h2 class="title" style="margin: 0">
+                {{ rating[1] }}
+                <span class="divider">•</span>
+                <span class="subject">{{ rating[2] }}</span>
+              </h2>
+            </div>
+          </div>
+        </div>
+        <div class="summary-pills">
+          <span class="pill">Lyrics <b>{{ rating[3] }}</b></span>
+          <span class="pill">Beat <b>{{ rating[5] }}</b></span>
+          <span class="pill">Flow <b>{{ rating[7] }}</b></span>
+          <span class="pill">Melody <b>{{ rating[9] }}</b></span>
+          <span class="pill">Cohesive <b>{{ rating[11] }}</b></span>
+        </div>
+      </section>
+
+      <section class="rating-details">
+        <div class="detail-item">
+          <div class="detail-head">
+            <h3>Lyrics</h3>
+            <span class="detail-score">{{ rating[3] }}</span>
+          </div>
+          <p class="reason">{{ rating[4] or 'No reason provided.' }}</p>
+        </div>
+        <div class="detail-item">
+          <div class="detail-head">
+            <h3>Beat</h3>
+            <span class="detail-score">{{ rating[5] }}</span>
+          </div>
+          <p class="reason">{{ rating[6] or 'No reason provided.' }}</p>
+        </div>
+        <div class="detail-item">
+          <div class="detail-head">
+            <h3>Flow</h3>
+            <span class="detail-score">{{ rating[7] }}</span>
+          </div>
+          <p class="reason">{{ rating[8] or 'No reason provided.' }}</p>
+        </div>
+        <div class="detail-item">
+          <div class="detail-head">
+            <h3>Melody</h3>
+            <span class="detail-score">{{ rating[9] }}</span>
+          </div>
+          <p class="reason">{{ rating[10] or 'No reason provided.' }}</p>
+        </div>
+        <div class="detail-item">
+          <div class="detail-head">
+            <h3>Cohesive</h3>
+            <span class="detail-score">{{ rating[11] }}</span>
+          </div>
+          <p class="reason">{{ rating[12] or 'No reason provided.' }}</p>
+        </div>
+      </section>
+
+      <div class="rating-actions">
+        <a href="/browse" class="btn-cancel">← Back to Browse</a>
+      </div>
+    </main>
+  </body>
+</html>

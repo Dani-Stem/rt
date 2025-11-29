@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>{% if login %}Log In{% else %}Sign Up{% endif %} - RealTop</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+
+  <body>
+    <header>
+      <h1>
+        <a href="/">RealTop</a>
+      </h1>
+      <navbar>
+        <a href="">TOP100</a>
+        <span>•</span>
+        <a href="">NEW RELEASES</a>
+        <span>•</span>
+        <a href="/browse">BROWSE</a>
+        <span>•</span>
+        <a href="">SEARCH</a>
+        <span>•</span>
+        <a href="/add">ADD</a>
+      </navbar>
+      <nav>
+        {% if current_user.is_authenticated %} {% if current_user.profile_pic %}
+        <img class="avatar" src="{{ current_user.profile_pic }}" alt="Avatar" />
+        {% else %}
+        <span class="avatar-initial">{{ current_user.username[0]|upper }}</span>
+        {% endif %}
+        <a href="/profile" class="link-plain"
+          >Hi, {{ current_user.username }}</a
+        >
+        <a href="/logout" class="btn-auth">Log Out</a>
+        {% else %}
+        <a href="/auth" class="btn-auth">Sign Up / Log In</a>
+        {% endif %}
+      </nav>
+    </header>
+
+    <main>
+      <div class="signup-container">
+        {% with messages = get_flashed_messages(with_categories=true) %} {% set
+        filtered = messages | selectattr(0, 'ne', 'profile') | list %} {% if
+        filtered %}
+        <div
+          style="
+            background: #1f2937;
+            border: 1px solid #374151;
+            color: #f87171;
+            padding: 10px 12px;
+            border-radius: 8px;
+            margin-bottom: 16px;
+          "
+        >
+          {% for category, message in filtered %}
+          <div>{{ message }}</div>
+          {% endfor %}
+        </div>
+        {% endif %} {% endwith %} {% if login %}
+        <h2>Log In</h2>
+        <form action="/login" method="post" class="signup-form">
+          <input type="hidden" name="next" value="{{ next or '' }}" />
+          <div class="form-group">
+            <label for="username">Username or Email:</label>
+            <input type="text" id="username" name="username" required />
+          </div>
+
+          <div class="form-group">
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" required />
+          </div>
+
+          <button type="submit" class="btn-primary">Log In</button>
+
+          <p class="form-footer">
+            Don't have an account? <a href="/auth">Sign up</a>
+          </p>
+        </form>
+        {% else %}
+        <h2>Create an Account</h2>
+        <form action="/signup" method="post" class="signup-form">
+          <input type="hidden" name="next" value="{{ next or '' }}" />
+          <div class="form-group">
+            <label for="username">Username:</label>
+            <input type="text" id="username" name="username" required />
+          </div>
+
+          <div class="form-group">
+            <label for="email">Email:</label>
+            <input type="email" id="email" name="email" required />
+          </div>
+
+          <div class="form-group">
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" required />
+          </div>
+
+          <div class="form-group">
+            <label for="confirm_password">Confirm Password:</label>
+            <input
+              type="password"
+              id="confirm_password"
+              name="confirm_password"
+              required
+            />
+          </div>
+
+          <button type="submit" class="btn-primary">Sign Up</button>
+
+          <p class="form-footer">
+            Already have an account? <a href="/auth?login=true">Log in</a>
+          </p>
+        </form>
+        {% endif %}
+      </div>
+    </main>
+  </body>
+</html>

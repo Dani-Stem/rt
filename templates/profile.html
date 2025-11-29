@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Profile - RealTop</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+
+  <body>
+    <header>
+      <h1>
+        <a href="/">RealTop</a>
+      </h1>
+      <navbar>
+        <a href="">TOP100</a>
+        <span>•</span>
+        <a href="">NEW RELEASES</a>
+        <span>•</span>
+        <a href="/browse">BROWSE</a>
+        <span>•</span>
+        <a href="">SEARCH</a>
+        <span>•</span>
+        <a href="/add">ADD</a>
+      </navbar>
+      <nav>
+        {% if current_user.is_authenticated %}
+        <span style="margin-right: 12px; color: #9ca3af">
+          Hi, {{ current_user.username }}
+        </span>
+        <a href="/logout" class="btn-auth">Log Out</a>
+        {% else %}
+        <a href="/auth" class="btn-auth">Sign Up / Log In</a>
+        {% endif %}
+      </nav>
+    </header>
+
+    <main>
+      <h2>Your Profile</h2>
+      {% with messages = get_flashed_messages(with_categories=true) %} {% if
+      messages %} {% for category, message in messages %} {% if category ==
+      'profile' %}
+      <div
+        style="
+          background: #1f2937;
+          border: 1px solid #374151;
+          color: #10b981;
+          padding: 8px 10px;
+          border-radius: 6px;
+          max-width: 360px;
+          margin: 0 0 12px 0;
+          font-size: 0.85rem;
+        "
+      >
+        {{ message }}
+      </div>
+      {% endif %} {% endfor %} {% endif %} {% endwith %}
+      <div class="profile-card">
+        <div class="avatar-large">
+          {% if current_user.profile_pic %}
+          <img src="{{ current_user.profile_pic }}" alt="Avatar" />
+          {% else %}
+          <div class="avatar-placeholder">
+            {{ current_user.username[0]|upper }}
+          </div>
+          {% endif %}
+        </div>
+        {% if current_user.profile_pic %}
+        <div class="profile-actions">
+          <form action="/profile/remove" method="post">
+            <button type="submit" class="btn-danger">Remove Picture</button>
+          </form>
+        </div>
+        {% endif %}
+        <p class="profile-line">
+          <span class="profile-label">Username</span
+          ><span class="profile-value">{{ current_user.username }}</span>
+        </p>
+        <p class="profile-line">
+          <span class="profile-label">Email</span
+          ><span class="profile-value">{{ current_user.email }}</span>
+        </p>
+      </div>
+
+      <h3>Upload Profile Picture</h3>
+      <form
+        action="/profile/upload"
+        method="post"
+        enctype="multipart/form-data"
+      >
+        <input type="file" name="profile_pic" accept="image/*" />
+        <br /><br />
+        <button type="submit" class="btn-submit">Upload</button>
+        <a href="/browse" class="btn-cancel">Done</a>
+      </form>
+    </main>
+  </body>
+</html>

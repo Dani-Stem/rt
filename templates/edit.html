@@ -13,14 +13,28 @@
       <a href="/">RealTop</a>
     </h1>
     <navbar>
-      <a href=""> TOP100 </a>
-      <a href=""> NEW RELEASES </a>
-      <a href="/browse"> BROWSE </a>
-      <a href=""> SEARCH </a>
-      <a href="/add"> ADD </a>
+      <a href="">TOP100</a>
+      <span>•</span>
+      <a href="">NEW RELEASES</a>
+      <span>•</span>
+      <a href="/browse">BROWSE</a>
+      <span>•</span>
+      <a href="">SEARCH</a>
+      <span>•</span>
+      <a href="/add">ADD</a>
     </navbar>
     <nav>
-      <a href="">login</a>
+      {% if current_user.is_authenticated %}
+      {% if current_user.profile_pic %}
+      <img class="avatar" src="{{ current_user.profile_pic }}" alt="Avatar" />
+      {% else %}
+      <span class="avatar-initial">{{ current_user.username[0]|upper }}</span>
+      {% endif %}
+      <a href="/profile" class="link-plain">Hi, {{ current_user.username }}</a>
+      <a href="/logout" class="btn-auth">Log Out</a>
+      {% else %}
+      <a href="/auth" class="btn-auth">Sign Up / Log In</a>
+      {% endif %}
     </nav>
   </header>
 
@@ -181,7 +195,7 @@
         placeholder="Write something...">{{ rating[12] }}</textarea><br />
       <br />
       <button type="submit" class="btn-update">Update</button>
-      <a href="/" class="btn-cancel">Cancel</a>
+      <a href="/browse" class="btn-cancel">Cancel</a>
     </form>
   </main>
 </body>

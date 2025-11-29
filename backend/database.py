@@ -1,0 +1,245 @@
+import sqlite3
+from backend._db_setup import DB_PATH
+from werkzeug.security import generate_password_hash, check_password_hash
+from flask_login import UserMixin
+
+
+# Connect to database
+def get_db_connection():
+    return sqlite3.connect(DB_PATH)
+
+
+# Get all ratings
+def get_ratings():
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT rating_key, rating_type, rating_name, lyrics_rating, beat_rating, flow_rating, melody_rating, cohesive_rating, user FROM ratings ORDER BY rating_key ASC"
+    )
+    rows = cur.fetchall()
+    conn.close()
+    return rows
+
+
+# Get a rating by key
+def get_rating_by_key(rating_key):
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT rating_key, rating_type, rating_name, lyrics_rating, lyrics_reason, beat_rating, beat_reason, flow_rating, flow_reason, melody_rating, melody_reason, cohesive_rating, cohesive_reason FROM ratings WHERE rating_key = ?",
+        (rating_key,),
+    )
+    row = cur.fetchone()
+    conn.close()
+    return row
+
+
+# Get rating owner
+def get_rating_owner(rating_key):
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("SELECT user FROM ratings WHERE rating_key = ?", (rating_key,))
+    row = cur.fetchone()
+    conn.close()
+    return row[0] if row else None
+
+
+# Add a new rating
+def add_rating(
+    rating_type: str,
+    rating_name: str,
+    lyrics_rating: int,
+    lyrics_reason: str,
+    beat_rating: int,
+    beat_reason: str,
+    flow_rating: int,
+    flow_reason: str,
+    melody_rating: int,
+    melody_reason: str,
+    cohesive_rating: int,
+    cohesive_reason: str,
+    user: str,
+):
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute(
+        "INSERT INTO ratings (rating_type, rating_name, lyrics_rating,lyrics_reason, beat_rating, beat_reason, flow_rating, flow_reason, melody_rating, melody_reason, cohesive_rating, cohesive_reason, user) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        (
+            rating_type,
+            rating_name,
+            lyrics_rating,
+            lyrics_reason,
+            beat_rating,
+            beat_reason,
+            flow_rating,
+            flow_reason,
+            melody_rating,
+            melody_reason,
+            cohesive_rating,
+            cohesive_reason,
+            user,
+        ),
+    )
+    conn.commit()
+    conn.close()
+
+
+# Update an existing rating
+def update_rating(
+    rating_key,
+    rating_type,
+    rating_name,
+    lyrics_rating,
+    lyrics_reason,
+    beat_rating,
+    beat_reason,
+    flow_rating,
+    flow_reason,
+    melody_rating,
+    melody_reason,
+    cohesive_rating,
+    cohesive_reason,
+):
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute(
+        "UPDATE ratings SET rating_type = ?, rating_name = ?, lyrics_rating = ?, lyrics_reason = ?, beat_rating = ?, beat_reason = ?, flow_rating = ?, flow_reason = ?, melody_rating = ?, melody_reason = ?, cohesive_rating = ?, cohesive_reason = ? WHERE rating_key = ?",
+        (
+            rating_type,
+            rating_name,
+            lyrics_rating,
+            lyrics_reason,
+            beat_rating,
+            beat_reason,
+            flow_rating,
+            flow_reason,
+            melody_rating,
+            melody_reason,
+            cohesive_rating,
+            cohesive_reason,
+            rating_key,
+        ),
+    )
+    conn.commit()
+    conn.close()
+
+
+# Delete a rating
+def delete_rating(rating_key):
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute("DELETE FROM ratings WHERE rating_key = ?", (rating_key,))
+    conn.commit()
+    conn.close()
+
+
+###############################################
+# User
+###############################################
+
+
+# User class for Flask-Login
+class User(UserMixin):
+    def __init__(self, user_id, username, email, password_hash, profile_pic=None):
+        self.id = user_id
+        self.username = username
+        self.email = email
+        self.password_hash = password_hash
+        self.profile_pic = profile_pic
+
+    def get_id(self):  # flask-login needs this
+        return str(self.id)
+
+
+# Helper function to convert DB row to User object
+def _row_to_user(row):
+    if not row:
+        return None
+    user_id, username, email, password_hash = row[0], row[1], row[2], row[3]
+    profile_pic = row[4] if len(row) > 4 else None
+    return User(user_id, username, email, password_hash, profile_pic)
+
+
+# Get user by ID
+def get_user_by_id(user_id):
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT user_info_key, username, email, password, profile_pic FROM user_info WHERE user_info_key = ?",
+        (user_id,),
+    )
+    row = cur.fetchone()
+    conn.close()
+    return _row_to_user(row)
+
+
+# Get user by username or email
+def get_user_by_username_or_email(identifier):
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT user_info_key, username, email, password, profile_pic FROM user_info WHERE username = ? OR email = ?",
+        (identifier, identifier),
+    )
+    row = cur.fetchone()
+    conn.close()
+    return _row_to_user(row)
+
+
+# Check if username or email exists
+def username_or_email_exists(username, email):
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT 1 FROM user_info WHERE username = ? OR email = ? LIMIT 1",
+        (username, email),
+    )
+    exists = cur.fetchone() is not None
+    conn.close()
+    return exists
+
+
+# Create a new user
+def create_user(username, email, password_plain):
+    if username_or_email_exists(username, email):
+        return None  # username or email is already taken
+    password_hash = generate_password_hash(password_plain)
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute(
+        "INSERT INTO user_info (username, email, password, profile_pic) VALUES (?,?,?,?)",
+        (username, email, password_hash, None),
+    )
+    conn.commit()
+    user_id = cur.lastrowid
+    conn.close()
+    return get_user_by_id(user_id)
+
+
+def verify_password(stored_hash, password_plain):
+    return check_password_hash(stored_hash, password_plain)
+
+
+# Update the user's profile picture
+def update_profile_pic(user_id, profile_pic_path):
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute(
+        "UPDATE user_info SET profile_pic = ? WHERE user_info_key = ?",
+        (profile_pic_path, user_id),
+    )
+    conn.commit()
+    conn.close()
+
+
+# Get profile picture from database using the username
+def get_profile_pic_by_username(username):
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT profile_pic FROM user_info WHERE username = ?",
+        (username,),
+    )
+    row = cur.fetchone()
+    conn.close()
+    return row[0] if row and row[0] else None
