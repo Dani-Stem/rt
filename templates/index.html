@@ -9,8 +9,9 @@
   <body>
     <header>
       <p>
-        <a href="/">RealTop</a>
+        <a href="/">REALTOP</a>
       <p>
+      <p>REAL PEOPLE. REAL RATINGS. REAL CHARTS.</p>
       <p>
         {% if current_user.is_authenticated %} {% if current_user.profile_pic %}
         <img class="avatar" src="{{ current_user.profile_pic }}" alt="Avatar" />
@@ -20,9 +21,9 @@
         <a href="/profile" class="link-plain"
           >Hi, {{ current_user.username }}</a
         >
-        <a href="/logout">Log Out</a>
+        <a href="/logout">LOGOUT</a>
         {% else %}
-        <a href="/auth">Sign Up / Log In</a>
+        <a href="/auth">SIGNUP/LOGIN</a>
         {% endif %}
       </p>
     </header>
@@ -39,11 +40,13 @@
         <a href="/add" class="btn-nav">PLAYLIST</a>
         <a href="" class="btn-nav">NEW</a>
         <a href="/add" class="btn-nav">TRENDING</a>
-           <input
+        <input
           type="text"
           id="search"
           name="search"
-        /><br /><br />
+          class="search_bar"
+        />
+        <a href="/add" class="btn-nav">SEARCH</a>
       </navbar>
 
     </main>
