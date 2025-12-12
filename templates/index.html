@@ -10,8 +10,10 @@
     <header>
       <p>
         <a href="/">REALTOP</a>
+      </p>
       <p>
-      <p>REAL PEOPLE. REAL RATINGS. REAL CHARTS.</p>
+      REAL PEOPLE. REAL RATINGS. REAL CHARTS.
+      </p>
       <p>
         {% if current_user.is_authenticated %} {% if current_user.profile_pic %}
         <img class="avatar" src="{{ current_user.profile_pic }}" alt="Avatar" />

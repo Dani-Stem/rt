@@ -144,14 +144,14 @@ header {
   background: linear-gradient(180deg,rgba(128, 247, 255, 1) 43%, rgba(34, 193, 195, 1) 100%);
   padding: 1rem 2rem;
   display: grid;
-  grid-template-columns: auto 1fr auto 1fr auto;
+  justify-content: center;
+  grid-template-columns: auto auto auto;
   color: #000000;
   width: 100%;
   border-bottom: .2vw solid #000 ;
-}
-
-header h1 {
-  flex-shrink: 0;
+  gap: 22vw;
+  font-weight: bolder;
+  font-size: 1.5vw;
 }
 
 navbar {
@@ -161,17 +161,6 @@ navbar {
   gap: .8vw;
   transform: translateX(24px);
 }
-
-
-header h1 a {
-  color: #000000;
-  text-decoration: none;
-}
-
-header h1 a:hover {
-  text-decoration: underline;
-}
-
 
 @media (max-width: 640px) {
   navbar {
@@ -184,10 +173,8 @@ header h1 a:hover {
   text-decoration: none;
   font-size: 0.7rem;
   font-weight: bolder;
-  padding: 0.4rem 0.9rem;
   background: #313131;
-  background: linear-gradient(180deg, rgba(49, 49, 49, 1) 45%, rgba(0, 0, 0, 1) 100%);border-radius: 42%;
-  transition: all 0.2s;
+  background: linear-gradient(180deg, rgba(49, 49, 49, 1) 45%, rgba(0, 0, 0, 1) 100%);border-radius: 15px;
   display: inline-block;
   border: 1px solid #000000;
   }
