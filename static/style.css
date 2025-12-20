@@ -1,11 +1,4 @@
 *, *:before, *:after {
-  /* 
-  Hello! 👋 
-  
-  this is a little trick I learned early-on in my career, where if you
-  DONT have this included, padding and borders can mess with width calculations
-  and cause elements to be larger than you expect.
-  */
   box-sizing: border-box; 
 }
 
@@ -38,28 +31,6 @@ a {
   text-decoration: none;
   color: #000;
 
-}
-
-.box_content {
-  width: 96%;
-  display: grid;
-  justify-content: center;
-  grid-template-columns: 25% 25% 25% 25%;
-  row-gap: 2%;
-  padding: 1%;
-  margin: 1%;
-}
-
-.thumbnail {
-  width: 85%;
-  height: 90%;
-  background: #000000;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 1) 0%, rgba(66, 66, 66, 1) 100%);
-  display: flex;
-  justify-content: left;
-  font-size: 1vw;
-  padding: 2%;
-  border: #000000 .2vw solid;
 }
 
 .data {
@@ -150,24 +121,106 @@ body {
   margin: 0;
 }
 
-header {
+.container{
+  display: grid;
+  grid-template-areas:
+    "header menu"
+    "content menu";
+  grid-template-columns: 2fr .7fr;
+}
+
+
+.container div.header {
+  grid-area: header;
+  text-align: center;
+}
+.container div.menu {
+  text-align: center;
+  grid-area: menu;
+}
+.container div.content {
+  grid-area: content;
+}
+
+input{
+  width: 13rem;
+  border-radius: 12px;
+  border: 1px solid #2d3748;
+}
+
+.menu {
+  padding-left: .6rem;
+  padding-right: .6rem;
+  justify-content: center;
+  color: #000000;
+  background: #80F7FF;
+  background: linear-gradient(180deg, rgba(128, 247, 255, 1) 43%, rgba(34, 193, 195, 1) 100%);
+  border-bottom: .2vw solid #000;
+  border-left: .2vw solid #000;
+  font-weight: bolder;
+  font-size: 1.5vw;
+}
+
+
+.title_search{
+  font-size: .9rem;
+}
+
+.title_login{
+  padding-top: 4rem;
+}
+
+.title_new{
+  padding-top: 4rem;
+}
+
+.new_content{
+  background-color: #fff;
+  border: .1rem solid #000;
+  height: 15rem;
+  border-radius: 12px;
+  border: 1px solid #2d3748;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  margin-bottom: 2rem;
+}
+
+.content{
+  display: grid;
+  grid-template-areas:
+    "content_left content_main";
+  grid-template-columns: 1fr 4fr;
+}
+
+.content div.content_left {
+  grid-area: content_left;
+}
+.content div.content_main {
+  grid-area: content_main;
+}
+
+.content_left{
+  border-right: .2vw solid #000;
+  padding: 2rem;
+}
+
+.content_main{
+  padding: 2rem;
+}
+
+
+.header {
   display: flex;
   align-items: center;
-  width: 100%;
-  padding: 1rem;
+  padding: 2rem;
   color: #000000;
   background: #80F7FF;
   background: linear-gradient(180deg, rgba(128, 247, 255, 1) 43%, rgba(34, 193, 195, 1) 100%);
   border-bottom: .2vw solid #000;
   font-weight: bolder;
-  font-size: 1.5vw;
+  font-size: 2.2vw;
 
   p {
-    /* This was creating that weird height earlier, and it was causing
-    the navigation buttons to stretch to its height. 
 
-    setting this to 0 margin fixes that, normalising the height of the nav buttons.
-    */
     margin: 0;
 
     a {
@@ -178,16 +231,17 @@ header {
 
   navbar {
     display: flex;
-    justify-content: flex-end; /* this was originally "left", but thats not a valid value. I THINK you want to align these to the right? otherwise you can change this to "flex-start" */
-    gap: .5rem; /* Unless you need things to scale WITH the windoe with, it doesnt help much to use viewport units (vw), you can use relative units like rem! which rely on the root size of your document */
+    justify-content: flex-start; 
+    gap: .5rem; 
     width: 100%;
+    padding-left: 2%;
 
     
     .btn-nav {
       display: flex;
       justify-content: center;
       align-items: center;
-      padding: .5rem; /* I added back the padding to the buttons so they do not look squished*/
+      padding: .5rem;
       color: #f5f5f5 !important;
       font-weight: bolder;
       background: #313131;
@@ -212,6 +266,10 @@ header {
 input.search_bar {
   border: .2vw solid #000;
   background-color: #d1d5db;
+}
+
+.search{
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
 }
 
 label {
@@ -754,18 +812,14 @@ li:hover {
 
 .signup-container {
   max-width: 400px;
-  margin: 3rem auto;
-  padding: 2rem;
-  background: #414040;
-  border-radius: 12px;
-  border: 1px solid #2d3748;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  padding-left: 2rem;
+  padding-right: 2rem;
 }
 
 .signup-container h2 {
   text-align: center;
   margin-bottom: 1.5rem;
-  color: #f5f5f5;
+  color: #000000;
 }
 
 .signup-form {
@@ -783,14 +837,13 @@ li:hover {
 .form-group label {
   font-size: 0.9rem;
   font-weight: 500;
-  color: #d1d5db;
+  color: #000000;
 }
 
 .form-group input {
   width: 100%;
-  padding: 0.75rem 1rem;
+  padding: 0.4rem .5rem;
   color: #101010;
-  border: 2px solid #374151;
   border-radius: 6px;
   background: #f5f5f5;
   font-size: 1rem;
@@ -802,7 +855,6 @@ li:hover {
   outline: none;
   border-color: #3b82f6;
   background: #1a1a1a;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
 }
 
 .form-group input:hover {
@@ -810,23 +862,24 @@ li:hover {
 }
 
 .btn-primary {
-  padding: 0.75rem 1.5rem;
-  background: #3b82f6;
-  color: #ffffff;
-  border: none;
-  border-radius: 6px;
-  font-size: 1rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: all 0.2s;
-  margin-top: 0.5rem;
-  box-shadow: 0 2px 4px rgba(59, 130, 246, 0.3);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: .5rem;
+      color: #f5f5f5 !important;
+      font-weight: bolder;
+      background: #313131;
+      background: linear-gradient(180deg, rgba(49, 49, 49, 1) 45%, rgba(0, 0, 0, 1) 100%);
+      border-radius: 15px;
+      border: 1px solid #000000;
+      text-decoration: none;
+      font-size: 1vw;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.4);
 }
 
 .btn-primary:hover {
-  background: #2563eb;
-  transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(59, 130, 246, 0.4);
+    background: #4b5563;
+    border-color: #6b7280;
 }
 
 .form-footer {
