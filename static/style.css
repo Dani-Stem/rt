@@ -145,7 +145,6 @@ body {
 input{
   width: 13rem;
   border-radius: 12px;
-  border: 1px solid #2d3748;
 }
 
 .menu {
@@ -164,11 +163,6 @@ input{
 
 .title_search{
   font-size: .9rem;
-}
-
-.title_login{
-  padding-top: 4rem;
-
 }
 
 .title_new{
@@ -264,13 +258,24 @@ input{
   }
 }
 
-input.search_bar {
-  border: .2vw solid #000;
-  background-color: #d1d5db;
+input.search_bar { 
+    padding: 80px 40px;
+    margin: 0 30px;
+    font-family: sans-serif;
+    color: rgba(0,0,0,0.2);
+    font-size: 24px;
+    position: relative;
+    width: 300px;
+        background:  #00bdb4;
+    border-radius: 15px;
+    box-shadow: -15px -15px 15px rgba(255, 255, 255, 0.2),
+                15px 15px 15px rgba(0,0,0,0.1);
 }
 
-.search{
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+.search{    
+    border-radius: 15px;
+    box-shadow: -15px -15px 15px rgba(255, 255, 255, 0.2),
+                15px 15px 15px rgba(0,0,0,0.1);
 }
 
 label {
@@ -812,9 +817,20 @@ li:hover {
 }
 
 .signup-container {
+    padding: 80px 40px;
+    margin: 0 30px;
+    font-family: sans-serif;
+    color: rgba(0,0,0,0.2);
+    font-size: 24px;
+    position: relative;
+    width: 300px;
   max-width: 400px;
   padding-left: 2rem;
   padding-right: 2rem;
+    border-radius: 15px;
+    box-shadow: -15px -15px 15px rgba(255, 255, 255, 0.2),
+                15px 15px 15px rgba(0,0,0,0.1);
+
 }
 
 .signup-container h2 {

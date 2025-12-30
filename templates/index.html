@@ -37,7 +37,10 @@
       name="search_name"
       required
       />
-      <p class="title_login">
+
+      <div class="signup-container">
+        
+        <p class="title_login">
         {% if current_user.is_authenticated %} {% if current_user.profile_pic %}
         <img class="avatar" src="{{ current_user.profile_pic }}" alt="Avatar" />
         {% else %}
@@ -52,7 +55,6 @@
         {% endif %}
       </p>
 
-      <div class="signup-container">
         {% with messages = get_flashed_messages(with_categories=true) %} {% set
         filtered = messages | selectattr(0, 'ne', 'profile') | list %} {% if
         filtered %}
