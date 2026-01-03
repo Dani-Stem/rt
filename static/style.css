@@ -2,6 +2,11 @@
   box-sizing: border-box; 
 }
 
+
+body{ 
+  background-color: #8e8b8b;
+}
+
 .rating-alt {
   max-width: 900px;
   margin: 0 auto;
@@ -170,7 +175,7 @@ input{
 }
 
 .new_content{
-  background-color: #fff;
+  background-color: #bcbaba;
   border: .1rem solid #000;
   height: 15rem;
   border-radius: 12px;
@@ -202,6 +207,14 @@ input{
   padding: 2rem;
 }
 
+.title_login{
+    background-color: rgb(209, 15, 15);
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    text-shadow: 3px 1px 1px #a09a9a83;
+}
+
 
 .header {
   display: flex;
@@ -219,8 +232,11 @@ input{
     margin: 0;
 
     a {
-      color: inherit;
-      text-decoration: none;
+    background-color: #000000;
+    background-clip: text;
+    -webkit-background-clip: text;
+    color: transparent;
+    text-shadow: 3px 1px 1px rgba(190, 190, 190, 0.534);
     }
   }
 
@@ -231,7 +247,6 @@ input{
     width: 100%;
     padding-left: 2%;
 
-    
     .btn-nav {
       display: flex;
       justify-content: center;
