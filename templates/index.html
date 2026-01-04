@@ -139,24 +139,21 @@
     
     </div>
 
-    <div class="content">
-      <div class="content_left">
-        test
-      </div>
-
-      <div class="content_main">
-      
-      
-      {% if not current_user.is_authenticated %}
-      <p class="auth-hint" style="color: #6b7280; font-style: italic">
-        Sign up or log in to add a rating.
-      </p>
-      {% endif %} {% if ratings %}
+      <div class="content">
+      <h2>FEATURED RATINGS</h2>
+      {% if ratings %}
       <ul>
         {% for rating in ratings %}
         <li onclick="window.location='/rating/{{ rating[0] }}'">
           {% set owner_username = rating[8] %}
-          <div class="rating-item-left">
+            <div class="raiting-item-emotes">
+              test
+              <br/>
+              test
+              <br/>
+              test
+            </div>  
+          <div class="rating-item-left">   
             <span style="vertical-align: middle">
               {% if owner_pics and owner_username in owner_pics and
               owner_pics[owner_username] %}
@@ -207,8 +204,6 @@
       </p>
       {% endif %}
       </div>
-    </div>
-
   </div>
 
     <main>

@@ -18,7 +18,6 @@ from backend.database import (
 
 app = Blueprint("main", __name__)
 
-
 # Home page
 @app.route("/")
 def home(): # Get all ratings from the database
