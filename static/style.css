@@ -404,7 +404,7 @@ input[type='email'] {
   cursor: text;
   color: #414040 !important;
   background: #f5f5f5 !important;
-  -webkit-text-fill-color: #f5f5f5;
+  -webkit-text-fill-color: #000;
 }
 
 input[type='text']:-webkit-autofill,
@@ -416,7 +416,7 @@ input[type='email']:-webkit-autofill:hover,
 input[type='email']:-webkit-autofill:focus,
 input[type='email']:-webkit-autofill:active {
   -webkit-box-shadow: 0 0 0 30px #414040 inset !important;
-  -webkit-text-fill-color: #f5f5f5 !important;
+  -webkit-text-fill-color: #000 !important;
 }
 
 button {
@@ -666,7 +666,7 @@ li {
   display: flex;
   align-items: center;
   gap: 8px;
-  border-left: .5rem solid #000;
+  border-left: .2rem solid #000;
 }
 
 .rating-item-text {

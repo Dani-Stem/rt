@@ -86,7 +86,7 @@ def login():
     login_user(user)
     if next_url and next_url.startswith("/"):
         return redirect(next_url)
-    return redirect("/browse")
+    return redirect("/profile")
 
 
 # Logout user
