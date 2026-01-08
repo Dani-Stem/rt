@@ -174,6 +174,30 @@ def add():
     return render_template("add.html")
 
 
+
+# Home page
+@app.route("/profile-view")
+def profileview(): # Get all ratings from the database
+    ratings = get_ratings()
+
+    # Extract the usernames of all owners who have ratings
+    owner_usernames = {rating[8] for rating in ratings} if ratings else set()
+
+    # Build a dictionary of {username: profile_picture_path or None}
+    owner_pics = {}
+    for username in owner_usernames:
+        picture_path = get_profile_pic_by_username(username)
+
+        # If the picture doesn't exist in file path, set to None
+        if not _pic_exists(picture_path):
+            picture_path = None
+
+        owner_pics[username] = picture_path
+
+    # Render the page with all ratings and their associated profile pictures
+    return render_template("profile-view.html", ratings=ratings, owner_pics=owner_pics)
+
+
 # Profile page
 @app.route("/profile", methods=["GET"])
 @login_required
