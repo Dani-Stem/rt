@@ -631,56 +631,9 @@ width:70%;
   width: 72%;
 }
 
-.alerts-card{ 
+.card{ 
   padding: 2rem;
   margin-bottom: 1rem;
-  color: #000000;
-  background: #80F7FF;
-  background: linear-gradient(180deg, rgba(128, 247, 255, 1) 43%, rgba(34, 193, 195, 1) 100%);
-  border-bottom: .2vw solid #000;
-  border-radius: 10px;
-}
-
-.activity-card{ 
-  padding: 2rem;
-  margin-bottom: 1rem;
-  color: #000000;
-  background: #80F7FF;
-  background: linear-gradient(180deg, rgba(128, 247, 255, 1) 43%, rgba(34, 193, 195, 1) 100%);
-  border-bottom: .2vw solid #000;
-  border-radius: 10px;
-}
-
-.actions-card{ 
-  padding: 2rem;
-  margin-bottom: 1rem;
-  color: #000000;
-  background: #80F7FF;
-  background: linear-gradient(180deg, rgba(128, 247, 255, 1) 43%, rgba(34, 193, 195, 1) 100%);
-  border-bottom: .2vw solid #000;
-  border-radius: 10px;
-}
-
-.ad-card{ 
-  padding: 2rem;
-  color: #000000;
-  background: #80F7FF;
-  background: linear-gradient(180deg, rgba(128, 247, 255, 1) 43%, rgba(34, 193, 195, 1) 100%);
-  border-bottom: .2vw solid #000;
-  border-radius: 10px;
-}
-
-.activity-card{ 
-  padding: 2rem;
-  color: #000000;
-  background: #80F7FF;
-  background: linear-gradient(180deg, rgba(128, 247, 255, 1) 43%, rgba(34, 193, 195, 1) 100%);
-  border-bottom: .2vw solid #000;
-  border-radius: 10px;
-}
-
-.bulletions-card{ 
-  padding: 2rem;
   color: #000000;
   background: #80F7FF;
   background: linear-gradient(180deg, rgba(128, 247, 255, 1) 43%, rgba(34, 193, 195, 1) 100%);
