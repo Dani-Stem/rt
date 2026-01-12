@@ -1,7 +1,16 @@
-from flask import Blueprint, render_template, request, redirect, flash, current_app
+from flask import (
+    Blueprint,
+    render_template,
+    request,
+    redirect,
+    flash,
+    current_app,
+    session,
+)
 from werkzeug.utils import secure_filename
 from pathlib import Path
 from flask_login import login_user, logout_user, login_required, current_user
+import random
 from backend.database import (
     get_ratings,
     get_rating_by_key,
@@ -16,40 +25,92 @@ from backend.database import (
     get_profile_pic_by_username,
 )
 
+# Initialize routes with Blueprint
+# Blueprint is what allows the routes to work (@app.route etc.)
 app = Blueprint("main", __name__)
+
 
 # Home page
 @app.route("/")
-def home(): # Get all ratings from the database
+def home():
+    ratings = get_ratings()
+    owner_pics = _get_owner_pics_for_ratings(ratings)
+    reactions_map = _build_reactions_map(ratings)
+    percent_map = _build_percent_map(ratings)
+
+    return render_template(
+        "index.html",
+        ratings=ratings,
+        owner_pics=owner_pics,
+        reactions_map=reactions_map,
+        percent_map=percent_map,
+    )
+
+
+# Browse page (list all ratings)
+@app.route("/browse")
+def browse():
     ratings = get_ratings()
 
-    # Extract the usernames of all owners who have ratings
-    owner_usernames = {rating[8] for rating in ratings} if ratings else set()
+    owner_pics = _get_owner_pics_for_ratings(ratings)
+    reactions_map = _build_reactions_map(ratings)
+    percent_map = _build_percent_map(ratings)
 
-    # Build a dictionary of {username: profile_picture_path or None}
-    owner_pics = {}
-    for username in owner_usernames:
-        picture_path = get_profile_pic_by_username(username)
+    return render_template(
+        "browse.html",
+        ratings=ratings,
+        owner_pics=owner_pics,
+        reactions_map=reactions_map,
+        percent_map=percent_map,
+    )
 
-        # If the picture doesn't exist in file path, set to None
-        if not _pic_exists(picture_path):
-            picture_path = None
 
-        owner_pics[username] = picture_path
+@app.route("/favorites")
+def favorites():
+    return render_template("favorites.html")
 
-    # Render the page with all ratings and their associated profile pictures
-    return render_template("index.html", ratings=ratings, owner_pics=owner_pics)
+
+@app.route("/playlists")
+def playlists():
+    return render_template("playlists.html")
+
+
+@app.route("/charts")
+def charts():
+    return render_template("charts.html")
+
+
+@app.route("/genres")
+def genres():
+    return render_template("genres.html")
 
 
 # Authentication page
 @app.route("/auth")
 def auth():
-    if current_user.is_authenticated:
-        return redirect("/browse")
-    login = request.args.get("login") == "true"
-    error = request.args.get("error")
-    next_url = request.args.get("next")
-    return render_template("auth.html", login=login, error=error, next=next_url)
+    session["auth_mode"] = "login"
+    ref = request.referrer
+    if ref and ref.startswith(request.host_url):
+        return redirect(ref)
+    return redirect("/")
+
+
+@app.route("/auth/signup")
+def auth_signup_mode():
+    session["auth_mode"] = "signup"
+    ref = request.referrer
+    if ref and ref.startswith(request.host_url):
+        return redirect(ref)
+    return redirect("/")
+
+
+@app.route("/auth/login")
+def auth_login_mode():
+    session["auth_mode"] = "login"
+    ref = request.referrer
+    if ref and ref.startswith(request.host_url):
+        return redirect(ref)
+    return redirect("/")
 
 
 # Signup user
@@ -59,15 +120,24 @@ def signup():
     email = request.form.get("email", "").strip()
     password = request.form.get("password", "")
     confirm = request.form.get("confirm_password", "")
-    next_url = request.form.get("next")
     if not username or not email or not password or password != confirm:
         flash("Please complete all fields and ensure passwords match.", "error")
-        return redirect("/auth" + ("?next=" + next_url if next_url else ""))
+        session["auth_mode"] = "signup"
+        ref = request.referrer
+        if ref and ref.startswith(request.host_url):
+            return redirect(ref)
+        return redirect("/")
     user = create_user(username, email, password)
-    if not user:  # username or email taken
+    if not user:  # if username or email taken
         flash("That username or email is already taken.", "error")
-        return redirect("/auth")
+        session["auth_mode"] = "signup"
+        ref = request.referrer
+        if ref and ref.startswith(request.host_url):
+            return redirect(ref)
+        return redirect("/")
     login_user(user)
+    next_url = session.pop("next_url", None)
+    session.pop("auth_mode", None)
     if next_url and next_url.startswith("/"):
         return redirect(next_url)
     return redirect("/browse")
@@ -78,15 +148,20 @@ def signup():
 def login():
     identifier = request.form.get("username", "").strip()
     password = request.form.get("password", "")
-    next_url = request.form.get("next")
     user = get_user_by_username_or_email(identifier)
     if not user or not verify_password(user.password_hash, password):
         flash("Invalid username/email or password.", "error")
-        return redirect("/auth?login=true" + ("&next=" + next_url if next_url else ""))
+        session["auth_mode"] = "login"
+        ref = request.referrer
+        if ref and ref.startswith(request.host_url):
+            return redirect(ref)
+        return redirect("/")
     login_user(user)
+    next_url = session.pop("next_url", None)
+    session.pop("auth_mode", None)
     if next_url and next_url.startswith("/"):
         return redirect(next_url)
-    return redirect("/profile")
+    return redirect("/browse")
 
 
 # Logout user
@@ -97,43 +172,32 @@ def logout():
     return redirect("/")
 
 
-# Browse page (list all ratings)
-@app.route("/browse")
-def browse():
-    # Get all ratings from the database
-    ratings = get_ratings()
-
-    # Extract the usernames of all owners who have ratings
-    owner_usernames = {rating[8] for rating in ratings} if ratings else set()
-
-    # Build a dictionary of {username: profile_picture_path or None}
-    owner_pics = {}
-    for username in owner_usernames:
-        picture_path = get_profile_pic_by_username(username)
-
-        # If the picture doesn't exist in file path, set to None
-        if not _pic_exists(picture_path):
-            picture_path = None
-
-        owner_pics[username] = picture_path
-
-    # Render the page with all ratings and their associated profile pictures
-    return render_template("browse.html", ratings=ratings, owner_pics=owner_pics)
-
-
 # View rating details
 @app.route("/rating/<int:rating_key>")
 def rating_detail(rating_key):
     rating = get_rating_by_key(rating_key)
     if not rating:
         return redirect("/browse")
+
     owner = get_rating_owner(rating_key)
+
+    percent = random.randint(70, 99)
+
+    detail_reactions = {}
+    for category in ("Lyrics", "Beat", "Flow", "Melody", "Cohesive"):
+        detail_reactions[category] = random.sample(REACTION_EMOJIS, k=5)
 
     owner_pic = get_profile_pic_by_username(owner) if owner else None
     if owner_pic and not _pic_exists(owner_pic):
         owner_pic = None
+
     return render_template(
-        "rating.html", rating=rating, owner=owner, owner_pic=owner_pic
+        "rating.html",
+        rating=rating,
+        owner=owner,
+        owner_pic=owner_pic,
+        detail_reactions=detail_reactions,
+        percent=percent,
     )
 
 
@@ -171,74 +235,30 @@ def add():
                 current_user.username,
             )
         return redirect("/browse")
-    return render_template("add.html")
-
-
-
-@app.route("/profile-view")
-def profileview(): # Get all ratings from the database
-    ratings = get_ratings()
-
-    # Extract the usernames of all owners who have ratings
-    owner_usernames = {rating[8] for rating in ratings} if ratings else set()
-
-    # Build a dictionary of {username: profile_picture_path or None}
-    owner_pics = {}
-    for username in owner_usernames:
-        picture_path = get_profile_pic_by_username(username)
-
-        # If the picture doesn't exist in file path, set to None
-        if not _pic_exists(picture_path):
-            picture_path = None
-
-        owner_pics[username] = picture_path
-
-    # Render the page with all ratings and their associated profile pictures
-    return render_template("profile-view.html", ratings=ratings, owner_pics=owner_pics)
-
-@app.route("/profile-edit")
-def profileedit(): # Get all ratings from the database
-    ratings = get_ratings()
-
-    # Extract the usernames of all owners who have ratings
-    owner_usernames = {rating[8] for rating in ratings} if ratings else set()
-
-    # Build a dictionary of {username: profile_picture_path or None}
-    owner_pics = {}
-    for username in owner_usernames:
-        picture_path = get_profile_pic_by_username(username)
-
-        # If the picture doesn't exist in file path, set to None
-        if not _pic_exists(picture_path):
-            picture_path = None
-
-        owner_pics[username] = picture_path
-
-    # Render the page with all ratings and their associated profile pictures
-    return render_template("profile-edit.html", ratings=ratings, owner_pics=owner_pics)
+    return render_template("add.html", form_action="/add")
 
 
 # Profile page
 @app.route("/profile", methods=["GET"])
 @login_required
 def profile():
-    # If the saved picture path doesn't point to a real file anymore,
+    # If the saved picture path doesn't point to a file anymore,
     # this temporarily set it to None so the template shows the default image.
     if current_user.profile_pic and not _pic_exists(current_user.profile_pic):
         current_user.profile_pic = None
     return render_template("profile.html")
 
 
-# Upload new profile picture (setup code)
+# Upload new profile picture
 @app.route("/profile/upload", methods=["POST"])
 @login_required
 def upload_profile_pic():
     file = request.files.get("profile_pic")
     if not file or file.filename == "":
-        flash("No file selected.", "error")
+        flash("No file selected.", "profile")
         return redirect("/profile")
     if not _allowed_file(file.filename):
-        flash("Unsupported file type.", "error")
+        flash("Unsupported file type.", "profile")
         return redirect("/profile")
 
     upload_folder = Path(current_app.config.get("UPLOAD_FOLDER"))
@@ -306,7 +326,11 @@ def edit(rating_key):
     rating = get_rating_by_key(rating_key)
     if not rating:
         return redirect("/browse")
-    return render_template("edit.html", rating=rating)
+    return render_template(
+        "edit.html",
+        rating=rating,
+        form_action=f"/edit/{rating_key}",
+    )
 
 
 # Delete rating
@@ -321,9 +345,62 @@ def delete(rating_key):
     return redirect("/browse")
 
 
-################################
+###############################################
 # Helper Functions
-################################
+###############################################
+
+# Source for emojis: https://getemoji.com/
+REACTION_EMOJIS = [
+    "👍",
+    "❤️",
+    "😂",
+    "😮",
+    "😢",
+    "😡",
+    "🔥",
+    "👏",
+    "🎉",
+    "🤔",
+    "👎",
+    "⭐",
+]
+
+
+def _build_reactions_map(ratings):
+    reactions_map = {}
+    if not ratings:
+        return reactions_map
+
+    current_username = current_user.username if current_user.is_authenticated else None
+    for rating in ratings:
+        rating_key = rating[0]
+        owner_username = rating[8]
+        if current_username and owner_username == current_username:
+            continue
+        reactions_map[rating_key] = random.sample(REACTION_EMOJIS, k=5)
+    return reactions_map
+
+
+def _build_percent_map(ratings):
+    percent_map = {}
+    if not ratings:
+        return percent_map
+
+    current_username = current_user.username if current_user.is_authenticated else None
+
+    for rating in ratings:
+        rating_key = rating[0]
+        owner_username = rating[8]
+
+        # Don't show percent on the current user's own ratings
+        if current_username and owner_username == current_username:
+            continue
+
+        # Random percent
+        percent_map[rating_key] = random.randint(60, 99)
+
+    return percent_map
+
 
 ALLOWED_EXTENSIONS = {"png", "jpg", "jpeg", "gif", "webp"}
 
@@ -332,9 +409,27 @@ def _allowed_file(filename: str) -> bool:
     return "." in filename and filename.rsplit(".", 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
-#  checks if an image file exists (setup code)
+#  checks if an image file exists
 def _pic_exists(rel_path: str) -> bool:
     if not rel_path:
         return False
-    fs_path = Path(current_app.root_path) / rel_path.lstrip("/")
+    if rel_path.startswith("/static/"):
+        fs_path = Path(current_app.static_folder) / rel_path.removeprefix("/static/")
+    else:
+        fs_path = Path(current_app.root_path) / rel_path.lstrip("/")
     return fs_path.exists()
+
+
+def _get_owner_pics_for_ratings(ratings):
+    if not ratings:
+        return {}
+
+    owner_usernames = {rating[8] for rating in ratings}
+
+    owner_pics = {}
+    for username in owner_usernames:
+        picture_path = get_profile_pic_by_username(username)
+        if not _pic_exists(picture_path):
+            picture_path = None
+        owner_pics[username] = picture_path
+    return owner_pics

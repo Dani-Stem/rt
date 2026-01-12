@@ -1,104 +1,94 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Browse - RealTop</title>
-    <link rel="stylesheet" href="/static/style.css" />
-  </head>
-
-  <body>
-    <header>
-      <h1>
-        <a href="/">RealTop</a>
-      </h1>
-      <navbar>
-        <a href="">TOP100</a>
-        <span>•</span>
-        <a href="">NEW RELEASES</a>
-        <span>•</span>
-        <a href="/browse">BROWSE</a>
-        <span>•</span>
-        <a href="">SEARCH</a>
-        <span>•</span>
-        <a href="/add">ADD</a>
-      </navbar>
-      <nav>
-        {% if current_user.is_authenticated %} {% if current_user.profile_pic %}
-        <img class="avatar" src="{{ current_user.profile_pic }}" alt="Avatar" />
-        {% else %}
-        <span class="avatar-initial">{{ current_user.username[0]|upper }}</span>
-        {% endif %}
-        <a href="/profile" class="link-plain"
-          >Hi, {{ current_user.username }}</a
-        >
-        <a href="/logout" class="btn-auth">Log Out</a>
-        {% else %}
-        <a href="/auth" class="btn-auth">Sign Up / Log In</a>
-        {% endif %}
-      </nav>
-    </header>
-
-    <main>
-      <h2>Ratings</h2>
-      {% if not current_user.is_authenticated %}
-      <p class="auth-hint" style="color: #6b7280; font-style: italic">
-        Sign up or log in to add a rating.
-      </p>
-      {% endif %} {% if ratings %}
-      <ul>
-        {% for rating in ratings %}
-        <li onclick="window.location='/rating/{{ rating[0] }}'">
-          {% set owner_username = rating[8] %}
-          <div class="rating-item-left">
-            <span style="vertical-align: middle">
-              {% if owner_pics and owner_username in owner_pics and
-              owner_pics[owner_username] %}
-              <img
-                class="avatar"
-                src="{{ owner_pics[owner_username] }}"
-                alt="{{ owner_username }} avatar"
-              />
-              {% else %}
-              <span class="avatar-initial">{{ owner_username[0]|upper }}</span>
-              {% endif %}
-            </span>
-            <span class="rating-item-text">
-              <strong>{{ rating[1] }}</strong> : {{ rating[2] }}<br />
-              <small>
-                Lyrics: {{ rating[3] }} | Beat: {{ rating[4] }} | Flow: {{
-                rating[5] }} | Melody: {{ rating[6] }} | Cohesive: {{ rating[7]
-                }}
-              </small>
-            </span>
+{% extends "base.html" %}
+{% block title %}Browse - RealTop{% endblock %}
+{% block content_main_class %}ratings-container{% endblock %}
+{% block content_main %}
+          <div class="page-head">
+            <p class="title_search">Browse Ratings</p>
+            <a href="/add" class="btn-nav">ADD</a>
           </div>
-          <span onclick="event.stopPropagation()">
-            {% if current_user.is_authenticated and rating[8] ==
-            current_user.username %}
-            <a href="/edit/{{ rating[0] }}" onclick="event.stopPropagation()"
-              >Edit</a
+          {% if not current_user.is_authenticated %}
+          <p class="auth-hint" style="color: #6b7280; font-style: italic">
+            Sign up or log in to add a rating.
+          </p>
+          {% endif %} {% if ratings %}
+          <ul class="rating-list">
+            {% for rating in ratings %}
+            <li
+              onclick="window.location='/rating/{{ rating[0] }}'"
+              class="{% if current_user.is_authenticated and rating[8] == current_user.username %}is-owner{% endif %}"
             >
-            <form
-              action="/delete/{{ rating[0] }}"
-              method="post"
-              style="display: inline"
-            >
-              <button
-                type="submit"
-                onclick="event.stopPropagation(); return confirm('Are you sure you want to delete this rating?')"
+              {% set pct = percent_map.get(rating[0]) if percent_map else None
+              %} {% if pct %}
+              <span class="rating-percent" aria-hidden="true">{{ pct }}%</span>
+              {% endif %} {% set owner_username = rating[8] %}
+
+              <div class="rating-item-left">
+                <span class="avatar-wrap">
+                  {% if owner_pics and owner_username in owner_pics and
+                  owner_pics[owner_username] %}
+                  <img
+                    class="avatar"
+                    src="{{ owner_pics[owner_username] }}"
+                    alt="{{ owner_username }} avatar"
+                  />
+                  {% else %}
+                  <span class="avatar-initial"
+                    >{{ owner_username[0]|upper }}</span
+                  >
+                  {% endif %}
+                </span>
+                <span class="rating-item-text">
+                  <small class="rating-owner">{{ owner_username }}</small>
+                  <strong>{{ rating[1] }}</strong>: {{ rating[2] }}<br />
+                  <small>
+                    Lyrics: {{ rating[3] }} | Beat: {{ rating[4] }} | Flow: {{
+                    rating[5] }} | Melody: {{ rating[6] }} | Cohesive: {{
+                    rating[7] }}
+                  </small>
+                </span>
+              </div>
+              <span
+                class="rating-item-actions"
+                onclick="event.stopPropagation()"
               >
-                ×
-              </button>
-            </form>
-            {% endif %}
-          </span>
-        </li>
-        {% endfor %}
-      </ul>
-      {% else %}
-      <p style="color: #6b7280; font-style: italic">
-        No ratings yet. Click "ADD" to add your first rating!
-      </p>
-      {% endif %}
-    </main>
-  </body>
-</html>
+                {% if current_user.is_authenticated and rating[8] ==
+                current_user.username %}
+                <span class="rating-action-group">
+                  <a
+                    href="/edit/{{ rating[0] }}"
+                    class="rating-action rating-action-edit"
+                    onclick="event.stopPropagation()"
+                    >Edit</a
+                  >
+                  <form
+                    action="/delete/{{ rating[0] }}"
+                    method="post"
+                    style="display: inline"
+                  >
+                    <button
+                      type="submit"
+                      class="rating-action rating-action-delete"
+                      onclick="event.stopPropagation(); return confirm('Are you sure you want to delete this rating?')"
+                    >
+                      ×
+                    </button>
+                  </form>
+                </span>
+                {% endif %} {% set reactions = reactions_map.get(rating[0]) if
+                reactions_map else [] %} {% if reactions %}
+                <span class="rating-reactions" aria-hidden="true">
+                  {% for emoji in reactions %}
+                  <span class="rating-emoji">{{ emoji }}</span>
+                  {% endfor %}
+                </span>
+                {% endif %}
+              </span>
+            </li>
+            {% endfor %}
+          </ul>
+          {% else %}
+          <p style="color: #6b7280; font-style: italic">
+            No ratings yet. Click "ADD" to add your first rating!
+          </p>
+          {% endif %}
+{% endblock %}

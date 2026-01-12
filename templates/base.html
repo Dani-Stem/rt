@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>{% block title %}RealTop{% endblock %}</title>
+    <link rel="stylesheet" href="/static/style.css" />
+  </head>
+
+  <body>
+    <div class="container">
+      <div class="header">
+        <p>
+          <a href="/">REALTOP</a>
+        </p>
+        <navbar>
+          <div class="nav-links">
+            <a href="/" class="btn-nav">HOME</a>
+            <a href="/browse" class="btn-nav">BROWSE</a>
+            <a href="/favorites" class="btn-nav">FAVORITES</a>
+            <a href="/playlists" class="btn-nav">PLAYLISTS</a>
+            <a href="/charts" class="btn-nav">CHARTS</a>
+            <a href="/genres" class="btn-nav">GENRES</a>
+          </div>
+
+          <form class="nav-search" action="/browse" method="get">
+            <input
+              class="nav-search-input"
+              type="search"
+              name="q"
+              placeholder="Search…"
+              aria-label="Search"
+            />
+          </form>
+        </navbar>
+      </div>
+
+      <div
+        class="menu{% if current_user.is_authenticated %} is-auth{% endif %}"
+      >
+        <div
+          class="signup-container{% if current_user.is_authenticated %} is-auth{% endif %}"
+        >
+          <p class="title_login">
+            {% if current_user.is_authenticated %}
+            <span class="user-summary">
+              <span class="login-avatar">
+                {% if current_user.profile_pic %}
+                <img
+                  class="avatar"
+                  src="{{ current_user.profile_pic }}"
+                  alt="Avatar"
+                />
+                {% else %}
+                <span class="avatar-initial"
+                  >{{ current_user.username[0]|upper }}</span
+                >
+                {% endif %}
+              </span>
+              <span class="user-name">{{ current_user.username }}</span>
+            </span>
+            {% else %} {% if login %}
+            <span class="title_text">CREATE AN ACCOUNT</span>
+            {% else %}
+            <span class="title_text">LOGIN</span>
+            {% endif %} {% endif %}
+          </p>
+
+          {% with messages = get_flashed_messages(with_categories=true) %} {%
+          set filtered = messages | selectattr(0, 'ne', 'profile') | list %} {%
+          if filtered %}
+          <div
+            style="
+              background: #1f2937;
+              border: 1px solid #374151;
+              color: #f87171;
+              padding: 10px 12px;
+              border-radius: 8px;
+              margin-bottom: 16px;
+            "
+          >
+            {% for category, message in filtered %}
+            <div>{{ message }}</div>
+            {% endfor %}
+          </div>
+          {% endif %} {% endwith %} {% if current_user.is_authenticated %}
+          <a href="" class="btn-primary">INVITE</a>
+          {% if request.path != '/profile' %}
+          <a href="/profile" class="btn-primary">VIEW PROFILE</a>
+          {% endif %}
+          <a href="/logout" class="btn-primary btn-secondary">LOG OUT</a>
+          {% else %} {% if login %}
+          <form action="/signup" method="post" class="signup-form">
+            <input type="hidden" name="next" value="{{ next or '' }}" />
+            <div class="form-group">
+              <label for="username">Username:</label>
+              <input type="text" id="username" name="username" required />
+            </div>
+
+            <div class="form-group">
+              <label for="email">Email:</label>
+              <input type="email" id="email" name="email" required />
+            </div>
+
+            <div class="form-group">
+              <label for="password">Password:</label>
+              <input type="password" id="password" name="password" required />
+            </div>
+
+            <div class="form-group">
+              <label for="confirm_password">Confirm Password:</label>
+              <input
+                type="password"
+                id="confirm_password"
+                name="confirm_password"
+                required
+              />
+            </div>
+
+            <button type="submit" class="btn-primary">Sign Up</button>
+
+            <p class="form-footer">
+              Already have an account? <a href="/auth/login">Log in</a>
+            </p>
+          </form>
+          {% else %}
+          <form action="/login" method="post" class="signup-form">
+            <input type="hidden" name="next" value="{{ next or '' }}" />
+            <div class="form-group">
+              <label for="username">USERNAME OR EMAIL:</label>
+              <input type="text" id="username" name="username" required />
+            </div>
+
+            <div class="form-group">
+              <label for="password">PASSWORD:</label>
+              <input type="password" id="password" name="password" required />
+            </div>
+
+            <button type="submit" class="btn-primary">LOG IN</button>
+
+            <p class="form-footer">
+              DONT HAVE AN ACCOUNT? <a href="/auth/signup">SIGN UP</a>
+            </p>
+          </form>
+          {% endif %} {% endif %}
+        </div>
+        {% if current_user.is_authenticated %}
+        <div class="activity-card">
+          <p class="title_search">ACTIVITY</p>
+          <input class="sidebar-toggle" id="activity-toggle" type="checkbox" />
+          <div class="sidebar-collapsible">
+            <ul class="sidebar-list">
+              <li class="sidebar-item">You rated: Test</li>
+              <li class="sidebar-item">Edited: Test</li>
+              <li class="sidebar-item">Deleted: Test</li>
+              <li class="sidebar-item">New reaction on: Test</li>
+              <li class="sidebar-item">New rating: Test</li>
+              <li class="sidebar-item">Invite sent to: Test</li>
+              <li class="sidebar-item">Profile updated</li>
+              <li class="sidebar-item">Test: Test</li>
+            </ul>
+          </div>
+          <label class="sidebar-toggle-label" for="activity-toggle">
+            <span class="show-more">Show more</span>
+            <span class="show-less">Show less</span>
+          </label>
+        </div>
+        <div class="bulletin-card">
+          <p class="title_search">BULLETIN</p>
+          <input class="sidebar-toggle" id="bulletin-toggle" type="checkbox" />
+          <div class="sidebar-collapsible">
+            <ul class="sidebar-list">
+              <li class="sidebar-item">Test</li>
+              <li class="sidebar-item">Test</li>
+              <li class="sidebar-item">Test</li>
+              <li class="sidebar-item">Test</li>
+              <li class="sidebar-item">Test</li>
+              <li class="sidebar-item">Test</li>
+              <li class="sidebar-item">Test</li>
+              <li class="sidebar-item">Test</li>
+            </ul>
+          </div>
+          <label class="sidebar-toggle-label" for="bulletin-toggle">
+            <span class="show-more">Show more</span>
+            <span class="show-less">Show less</span>
+          </label>
+        </div>
+        {% endif %}
+      </div>
+
+      <div class="content">
+        <div class="content_left">
+          {% if current_user.is_authenticated %}
+          <div class="signup-container">
+            <p class="title_search">ALERTS</p>
+            <input class="sidebar-toggle" id="alerts-toggle" type="checkbox" />
+            <div class="sidebar-collapsible">
+              <ul class="sidebar-list">
+                <li class="sidebar-item">Test</li>
+                <li class="sidebar-item">Test</li>
+                <li class="sidebar-item">Test</li>
+                <li class="sidebar-item">Test</li>
+                <li class="sidebar-item">Test</li>
+                <li class="sidebar-item">Test</li>
+                <li class="sidebar-item">Test</li>
+                <li class="sidebar-item">Test</li>
+              </ul>
+            </div>
+            <label class="sidebar-toggle-label" for="alerts-toggle">
+              <span class="show-more">Show more</span>
+              <span class="show-less">Show less</span>
+            </label>
+          </div>
+          {% endif %}
+
+          <div class="signup-container">
+            <p class="title_search">TRENDING</p>
+            <input
+              class="sidebar-toggle"
+              id="trending-toggle"
+              type="checkbox"
+            />
+            <div class="sidebar-collapsible">
+              <ul class="sidebar-list">
+                <li class="sidebar-item">RAP: Test</li>
+                <li class="sidebar-item">RNB: Test</li>
+                <li class="sidebar-item">HIPHOP: Test</li>
+                <li class="sidebar-item">LOFI: Test</li>
+                <li class="sidebar-item">POP: Test</li>
+                <li class="sidebar-item">ALT: Test</li>
+                <li class="sidebar-item">TRAP: Test</li>
+                <li class="sidebar-item">SOUL: Test</li>
+              </ul>
+            </div>
+            <label class="sidebar-toggle-label" for="trending-toggle">
+              <span class="show-more">Show more</span>
+              <span class="show-less">Show less</span>
+            </label>
+          </div>
+
+          <div class="signup-container">
+            <p class="title_search">NEW</p>
+            <input class="sidebar-toggle" id="new-toggle" type="checkbox" />
+            <div class="sidebar-collapsible">
+              <ul class="sidebar-list">
+                <li class="sidebar-item">New: Test</li>
+                <li class="sidebar-item">New: Test</li>
+                <li class="sidebar-item">New: Test</li>
+                <li class="sidebar-item">New: Test</li>
+                <li class="sidebar-item">New: Test</li>
+                <li class="sidebar-item">New: Test</li>
+                <li class="sidebar-item">New: Test</li>
+                <li class="sidebar-item">New: Test</li>
+              </ul>
+            </div>
+            <label class="sidebar-toggle-label" for="new-toggle">
+              <span class="show-more">Show more</span>
+              <span class="show-less">Show less</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="content_main {% block content_main_class %}{% endblock %}">
+          {% block content_main %}{% endblock %}
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

@@ -1,203 +1,59 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Profile - RealTop</title>
-    <link rel="stylesheet" href="/static/style.css" />
-  </head>
+{% extends "base.html" %}
+{% block title %}Profile - RealTop{% endblock %}
+{% block content_main_class %}gradient-container{% endblock %}
+{% block content_main %}
+          <p class="title_search profile-title">Profile</p>
+          {% with messages = get_flashed_messages(with_categories=true) %} {% if
+          messages %} {% for category, message in messages %} {% if category ==
+          'profile' %}
+          <div class="profile-flash">{{ message }}</div>
+          {% endif %} {% endfor %} {% endif %} {% endwith %}
+          <div class="profile-stack">
+            <div class="profile-card profile-info">
+              <div class="avatar-large">
+                {% if current_user.profile_pic %}
+                <img src="{{ current_user.profile_pic }}" alt="Avatar" />
+                {% else %}
+                <div class="avatar-placeholder">
+                  {{ current_user.username[0]|upper }}
+                </div>
+                {% endif %}
+              </div>
 
-  <body>
-   
-    <div class="header">
-      <p>
-        <a href="/">REALTOP</a>
-      </p>
-      <navbar>
-        <a href="" class="btn-nav">HOME</a>
-        <a href="" class="btn-nav">BROWSE</a>
-        <a href="/browse" class="btn-nav">INVITE</a>
-        <a href="" class="btn-nav">FAVORITES</a>
-        <a href="/add" class="btn-nav">CHARTS</a>
-        <a href="" class="btn-nav">GENRES</a>
-        <a href="/add" class="btn-nav">PLAYLIST</a>
-        <a href="" class="btn-nav">NEW</a>
-        <a href="/add" class="btn-nav">TRENDING</a>
-        <input
-        class="search"
-        type="text"
-        value="search..."
-        id="search_name"
-        name="search_name"
-        required
-        />
-        <a href="/add" class="btn-nav">></a>
-      </navbar>
+              <p class="profile-line">
+                <span class="profile-label">Username:</span>
+                <span class="profile-value">{{ current_user.username }}</span>
+              </p>
 
-    </div>
+              <p class="profile-line">
+                <span class="profile-label">Email:</span>
+                <span class="profile-value">{{ current_user.email }}</span>
+              </p>
 
-    <main>
-      {% with messages = get_flashed_messages(with_categories=true) %} {% if
-      messages %} {% for category, message in messages %} {% if category ==
-      'profile' %}
-      <div
-        style="
-          padding: 2rem;
-          color: #000000;
-          background-color: #80F7FF;
-          background-color: linear-gradient(180deg, rgba(128, 247, 255, 1) 43%, rgba(34, 193, 195, 1) 100%);
-          border-bottom: .2vw solid #000;
-          max-width: 360px;
-          margin: 0 0 12px 0;
-          font-size: 0.85rem;
-        "
-      >
-        {{ message }}
-      </div>
-      {% endif %} {% endfor %} {% endif %} {% endwith %}
-      <div class="profile-card">
-        <div class="profile-card-left">
-        <div class="profile-card-left-left">
-        <div class="avatar-large">
-          {% if current_user.profile_pic %}
-          <img src="{{ current_user.profile_pic }}" alt="Avatar" />
-          {% else %}
-          <div class="avatar-placeholder">
-            {{ current_user.username[0]|upper }}
+              {% if current_user.profile_pic %}
+              <form action="/profile/remove" method="post">
+                <button type="submit" class="btn-remove-avatar" aria-label="Remove picture">
+                  ×
+                </button>
+              </form>
+              {% endif %}
+            </div>
+
+            <div class="profile-card profile-upload">
+              <p class="profile-section-title">Profile Picture</p>
+              <form
+                class="profile-upload-form"
+                action="/profile/upload"
+                method="post"
+                enctype="multipart/form-data"
+              >
+                <input type="file" name="profile_pic" accept="image/*" />
+                <div class="profile-actions">
+                  <button type="submit" class="btn-submit">Upload</button>
+                  <a href="/browse" class="btn-done">Done</a>
+                </div>
+              </form>
+            </div>
           </div>
-          {% endif %}
-        </div>
-        {% if current_user.profile_pic %}
-        <div class="profile-actions">
-          <form action="/profile/remove" method="post">
-            <button type="submit" class="btn-danger">Remove Picture</button>
-          </form>
-        </div>
-        {% endif %}
-        </div>
-        <div class="profile-card-left-right">
-        <p class="profile-line">
-          <span class="profile-label">Hello </span>
-          <span class="profile-value">{{ current_user.username }}!</span>
-        </p>
-          <a href="/profile-edit">Edit Profile</a> 
-          |
-          <a href="/profile-view">View Profile</a>
-        </div>
-        </div>
-        <div class="profile-card-right">
-          test: testing
-          <br/> 
-          test: testing
-          <br/>
-          test: testing
-          <br/> 
-          test: testing
-          <br/>
-          test: testing
-        </div>
-      </div>
-
-      <div class="content-body">
-        <div class="content-body-left">
-        <div class="card">
-          <h3>alerts card</h3>
-          testing
-          <br/> 
-          testing
-          <br/>
-          testing
-          <br/> 
-          testing
-          <br/>
-          testing
-
-        </div>
-        <div class="card">
-          <h3>actions card</h3>
-          testing
-          <br/> 
-          testing
-          <br/> 
-          testing
-        </div>
-        <div class="card">
-          ad card
-          <br/>
-          <br/>
-          <br/>
-          testing
-          <br/> 
-          testing
-          <br/>
-          testing
-          <br/> 
-          testing
-          <br/>
-          testing
-        </div>
-        </div>
-        <div class="content-body-right">
-        <div class="card">
-          <h3>activity card</h3>
-          testing
-          <br/> 
-          testing
-          <br/>
-          testing
-          <br/> 
-          testing
-          <br/>
-          testing
-          <br/>
-          testing
-          <br/> 
-          testing
-          <br/>
-          testing
-          <br/> 
-          testing
-          <br/>
-          testing
-          <br/>
-          testing
-          <br/> 
-          testing
-          <br/>
-          testing
-          <br/> 
-          testing
-          <br/>
-          testing
-        </div>
-        <div class="card">
-          <h3>bulletions card</h3>
-          testing
-          <br/> 
-          testing
-          <br/>
-          testing
-          <br/> 
-          testing
-          <br/>
-          testing
-        </div>
-        </div>
-      </div>
-
-      <!-- <h3>Upload Profile Picture</h3>
-      <form
-        action="/profile/upload"
-        method="post"
-        enctype="multipart/form-data"
-      >
-        <input type="file" name="profile_pic" accept="image/*" />
-        <br /><br />
-        <button type="submit" class="btn-submit">Upload</button>
-        <a href="/browse" class="btn-cancel">Done</a>
-      </form> -->
-
-
-
-    </main>
-  </body>
-</html>
+        
+{% endblock %}

@@ -1,213 +1,95 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>RealTop</title>
-    <link rel="stylesheet" href="/static/style.css" />
-  </head>
-
-  <body>
-
-  <div class="container">
-
-    <div class="header">
-      <p>
-        <a href="/">REALTOP</a>
-      </p>
-      <navbar>
-        <a href="" class="btn-nav">HOME</a>
-        <a href="" class="btn-nav">BROWSE</a>
-        <a href="/browse" class="btn-nav">INVITE</a>
-        <a href="" class="btn-nav">FAVORITES</a>
-        <a href="/add" class="btn-nav">CHARTS</a>
-        <a href="" class="btn-nav">GENRES</a>
-        <a href="/add" class="btn-nav">PLAYLIST</a>
-        <a href="" class="btn-nav">NEW</a>
-        <a href="/add" class="btn-nav">TRENDING</a>
-      </navbar>
-    </div>
-
-    <div class="menu">
-      
-      <p class="title_search">SEARCH</p>
-      <input
-      class="search"
-      type="text"
-      id="search_name"
-      name="search_name"
-      required
-      />
-
-      <div class="signup-container">
-        
-        <p class="title_login">
-        {% if current_user.is_authenticated %} {% if current_user.profile_pic %}
-        <img class="avatar" src="{{ current_user.profile_pic }}" alt="Avatar" />
-        {% else %}
-        <span class="avatar-initial">{{ current_user.username[0]|upper }}</span>
-        {% endif %}
-        <a href="/profile" class="link-plain"
-          >Hi, {{ current_user.username }}</a
-        >
-        <a href="/logout">LOGOUT</a>
-        {% else %}
-        <a href="/auth">LOGIN</a>
-        {% endif %}
-      </p>
-
-        {% with messages = get_flashed_messages(with_categories=true) %} {% set
-        filtered = messages | selectattr(0, 'ne', 'profile') | list %} {% if
-        filtered %}
-        <div
-          style="
-            background: #1f2937;
-            border: 1px solid #374151;
-            color: #f87171;
-            padding: 10px 12px;
-            border-radius: 8px;
-            margin-bottom: 16px;
-          "
-        >
-          {% for category, message in filtered %}
-          <div>{{ message }}</div>
+{% extends "base.html" %} {% block title %}RealTop{% endblock %} {% block
+content_main_class %}ratings-container ratings-home{% endblock %} {% block content_main %}
+<div class="page-head">
+  <p class="title_search">Featured Ratings</p>
+</div>
+{% if not current_user.is_authenticated %}
+<p class="auth-hint" style="color: #6b7280; font-style: italic">
+  Sign up or log in to add a rating.
+</p>
+{% endif %} {% if ratings %}
+<input
+  class="rating-list-toggle"
+  id="featured-ratings-toggle"
+  checked
+  type="checkbox"
+/>
+<div class="rating-list-toggle-wrap">
+  <div class="rating-list-collapsible">
+    <ul class="rating-list">
+    {% for rating in ratings %}
+    <li
+      onclick="window.location='/rating/{{ rating[0] }}'"
+      class="{% if current_user.is_authenticated and rating[8] == current_user.username %}is-owner{% endif %}"
+    >
+      {% set pct = percent_map.get(rating[0]) if percent_map else None %} {% if
+      pct %}
+      <span class="rating-percent" aria-hidden="true">{{ pct }}%</span>
+      {% endif %} {% set owner_username = rating[8] %}
+      <div class="rating-item-left">
+        <span class="avatar-wrap">
+          {% if owner_pics and owner_username in owner_pics and
+          owner_pics[owner_username] %}
+          <img
+            class="avatar"
+            src="{{ owner_pics[owner_username] }}"
+            alt="{{ owner_username }} avatar"
+          />
+          {% else %}
+          <span class="avatar-initial">{{ owner_username[0]|upper }}</span>
+          {% endif %}
+        </span>
+        <span class="rating-item-text">
+          <small class="rating-owner">{{ owner_username }}</small>
+          <strong>{{ rating[1] }}</strong>: {{ rating[2] }}<br />
+          <small>
+            Lyrics: {{ rating[3] }} | Beat: {{ rating[4] }} | Flow: {{ rating[5]
+            }} | Melody: {{ rating[6] }} | Cohesive: {{ rating[7] }}
+          </small>
+        </span>
+      </div>
+      <span class="rating-item-actions" onclick="event.stopPropagation()">
+        {% if current_user.is_authenticated and rating[8] ==
+        current_user.username %}
+        <span class="rating-action-group">
+          <a
+            href="/edit/{{ rating[0] }}"
+            class="rating-action rating-action-edit"
+            onclick="event.stopPropagation()"
+            >Edit</a
+          >
+          <form
+            action="/delete/{{ rating[0] }}"
+            method="post"
+            style="display: inline"
+          >
+            <button
+              type="submit"
+              class="rating-action rating-action-delete"
+              onclick="event.stopPropagation(); return confirm('Are you sure you want to delete this rating?')"
+            >
+              ×
+            </button>
+          </form>
+        </span>
+        {% endif %} {% set reactions = reactions_map.get(rating[0]) if
+        reactions_map else [] %} {% if reactions %}
+        <span class="rating-reactions" aria-hidden="true">
+          {% for emoji in reactions %}
+          <span class="rating-emoji">{{ emoji }}</span>
           {% endfor %}
-        </div>
-        {% endif %} {% endwith %} {% if login %}
-        <h2>Create an Account</h2>
-        <form action="/signup" method="post" class="signup-form">
-          <input type="hidden" name="next" value="{{ next or '' }}" />
-          <div class="form-group">
-            <label for="username">Username:</label>
-            <input type="text" id="username" name="username" required />
-          </div>
-
-          <div class="form-group">
-            <label for="email">Email:</label>
-            <input type="email" id="email" name="email" required />
-          </div>
-
-          <div class="form-group">
-            <label for="password">Password:</label>
-            <input type="password" id="password" name="password" required />
-          </div>
-
-          <div class="form-group">
-            <label for="confirm_password">Confirm Password:</label>
-            <input
-              type="password"
-              id="confirm_password"
-              name="confirm_password"
-              required
-            />
-          </div>
-
-          <button type="submit" class="btn-primary">Sign Up</button>
-
-          <p class="form-footer">
-            Already have an account? <a href="/auth?login=true">Log in</a>
-          </p>
-        </form>
-        {% else %}
-        <form action="/login" method="post" class="signup-form">
-          <input type="hidden" name="next" value="{{ next or '' }}" />
-          <div class="form-group">
-            <label for="username">USERNAME OR EMAIL:</label>
-            <input type="text" id="username" name="username" required />
-          </div>
-
-          <div class="form-group">
-            <label for="password">PASSWORD:</label>
-            <input type="password" id="password" name="password" required />
-          </div>
-
-          <button type="submit" class="btn-primary">LOG IN</button>
-
-          <p class="form-footer">
-            DONT HAVE AN ACCOUNT? <a href="/auth">SIGN UP</a>
-          </p>
-        </form>
+        </span>
         {% endif %}
-      </div>
-
-      <p class="title_new">NEW</p>
-      <div class="new_content">
-      </div>
-      <div class="new_content">
-      </div>
-      <div class="new_content">
-      </div>
-    
-    </div>
-
-      <div class="content">
-      <h2>FEATURED RATINGS</h2>
-      {% if ratings %}
-      <ul>
-        {% for rating in ratings %}
-        <li onclick="window.location='/rating/{{ rating[0] }}'">
-          {% set owner_username = rating[8] %}
-            <div class="raiting-item-emotes">
-              test
-              <br/>
-              test
-              <br/>
-              test
-            </div>  
-          <div class="rating-item-left">   
-            <span style="vertical-align: middle">
-              {% if owner_pics and owner_username in owner_pics and
-              owner_pics[owner_username] %}
-              <img
-                class="avatar"
-                src="{{ owner_pics[owner_username] }}"
-                alt="{{ owner_username }} avatar"
-              />
-              {% else %}
-              <span class="avatar-initial">{{ owner_username[0]|upper }}</span>
-              {% endif %}
-            </span>
-            <span class="rating-item-text">
-              <strong>{{ rating[1] }}</strong> : {{ rating[2] }}<br />
-              <small>
-                Lyrics: {{ rating[3] }} | Beat: {{ rating[4] }} | Flow: {{
-                rating[5] }} | Melody: {{ rating[6] }} | Cohesive: {{ rating[7]
-                }}
-              </small>
-            </span>
-          </div>
-          <span onclick="event.stopPropagation()">
-            {% if current_user.is_authenticated and rating[8] ==
-            current_user.username %}
-            <a href="/edit/{{ rating[0] }}" onclick="event.stopPropagation()"
-              >Edit</a
-            >
-            <form
-              action="/delete/{{ rating[0] }}"
-              method="post"
-              style="display: inline"
-            >
-              <button
-                type="submit"
-                onclick="event.stopPropagation(); return confirm('Are you sure you want to delete this rating?')"
-              >
-                ×
-              </button>
-            </form>
-            {% endif %}
-          </span>
-        </li>
-        {% endfor %}
-      </ul>
-      {% else %}
-      <p style="color: #6b7280; font-style: italic">
-        No ratings yet. Click "ADD" to add your first rating!
-      </p>
-      {% endif %}
-      </div>
+      </span>
+    </li>
+    {% endfor %}
+    </ul>
   </div>
-
-    <main>
-
-    </main>
-  </body>
-</html>
+  <label class="rating-list-toggle-label" for="featured-ratings-toggle">
+    <span class="show-more">Show All</span>
+    <span class="show-less">Show less</span>
+  </label>
+</div>
+{% else %}
+<p style="color: #6b7280; font-style: italic">No ratings yet.</p>
+{% endif %} {% endblock %}
