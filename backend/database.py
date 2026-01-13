@@ -165,7 +165,7 @@ def get_user_by_id(user_id):
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute(
-        "SELECT user_info_key, username, email, password, profile_pic FROM user_info WHERE user_info_key = ?",
+        "SELECT user_info_key, username, email, password, profile_pic, cred, about FROM user_info WHERE user_info_key = ?",
         (user_id,),
     )
     row = cur.fetchone()
@@ -178,7 +178,7 @@ def get_user_by_username_or_email(identifier):
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute(
-        "SELECT user_info_key, username, email, password, profile_pic FROM user_info WHERE username = ? OR email = ?",
+        "SELECT user_info_key, username, email, password, profile_pic, cred, about FROM user_info WHERE username = ? OR email = ?",
         (identifier, identifier),
     )
     row = cur.fetchone()
@@ -207,7 +207,7 @@ def create_user(username, email, password_plain):
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute(
-        "INSERT INTO user_info (username, email, password, profile_pic) VALUES (?,?,?,?)",
+        "INSERT INTO user_info (username, email, password, profile_pic, cred, about) VALUES (?,?,?,?)",
         (username, email, password_hash, None),
     )
     conn.commit()
