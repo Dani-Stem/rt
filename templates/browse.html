@@ -23,28 +23,38 @@
               {% endif %} {% set owner_username = rating[8] %}
 
               <div class="rating-item-left">
-                <span class="avatar-wrap">
-                  {% if owner_pics and owner_username in owner_pics and
-                  owner_pics[owner_username] %}
-                  <img
-                    class="avatar"
-                    src="{{ owner_pics[owner_username] }}"
-                    alt="{{ owner_username }} avatar"
-                  />
-                  {% else %}
-                  <span class="avatar-initial"
-                    >{{ owner_username[0]|upper }}</span
-                  >
-                  {% endif %}
+                <span class="rating-header">
+                  <span class="avatar-wrap">
+                    {% if owner_pics and owner_username in owner_pics and
+                    owner_pics[owner_username] %}
+                    <img
+                      class="avatar"
+                      src="{{ owner_pics[owner_username] }}"
+                      alt="{{ owner_username }} avatar"
+                    />
+                    {% else %}
+                    <span class="avatar-initial"
+                      >{{ owner_username[0]|upper }}</span
+                    >
+                    {% endif %}
+                  </span>
+                  <small class="rating-owner">{{ owner_username }}</small>
                 </span>
                 <span class="rating-item-text">
-                  <small class="rating-owner">{{ owner_username }}</small>
                   <strong>{{ rating[1] }}</strong>: {{ rating[2] }}<br />
                   <small>
                     Lyrics: {{ rating[3] }} | Beat: {{ rating[4] }} | Flow: {{
                     rating[5] }} | Melody: {{ rating[6] }} | Cohesive: {{
                     rating[7] }}
                   </small>
+                  {% set reactions = reactions_map.get(rating[0]) if
+                  reactions_map else [] %} {% if reactions %}
+                  <span class="rating-reactions" aria-hidden="true">
+                    {% for emoji in reactions %}
+                    <span class="rating-emoji">{{ emoji }}</span>
+                    {% endfor %}
+                  </span>
+                  {% endif %}
                 </span>
               </div>
               <span
@@ -73,13 +83,6 @@
                       ×
                     </button>
                   </form>
-                </span>
-                {% endif %} {% set reactions = reactions_map.get(rating[0]) if
-                reactions_map else [] %} {% if reactions %}
-                <span class="rating-reactions" aria-hidden="true">
-                  {% for emoji in reactions %}
-                  <span class="rating-emoji">{{ emoji }}</span>
-                  {% endfor %}
                 </span>
                 {% endif %}
               </span>
