@@ -99,6 +99,8 @@
             {% endif %} {% endwith %} {% if current_user.is_authenticated %}
             <a href="" class="btn-primary">INVITE</a>
             {% if request.path != '/profile' %}
+            <a href="/profile" class="btn-primary">VIEW PROFILE</a>
+            {% else %}
             <a href="/profile" class="btn-primary">EDIT PROFILE</a>
             {% endif %}
             <a href="/logout" class="btn-primary btn-secondary">LOG OUT</a>

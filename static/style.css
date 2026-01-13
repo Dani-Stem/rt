@@ -843,7 +843,7 @@ header nav {
 .content {
   display: grid;
   grid-template-areas: 'content_left content_main';
-  grid-template-columns: 340px 1fr;
+  grid-template-columns: 300px 1fr;
   min-width: 0;
   gap: 12px;
 }
@@ -1598,12 +1598,14 @@ li button:hover {
   border: 1px solid var(--border);
   background: rgba(255, 255, 255, 0.05);
   box-shadow: var(--shadow-md);
+  display: flex;
+  background-color: #9b9797;
 }
 
 .avatar-large {
   display: flex;
-  align-items: center;
-  justify-content: center;
+  align-items: left;
+  justify-content: left;
   margin-bottom: 0.8rem;
 }
 

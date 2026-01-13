@@ -1,7 +1,6 @@
 {% extends "base.html" %} {% block title %}Profile - RealTop{% endblock %} {%
 block content_main_class %}gradient-container{% endblock %} {% block
 content_main %}
-<p class="title_search profile-title">Profile</p>
 {% with messages = get_flashed_messages(with_categories=true) %} {% if messages
 %} {% for category, message in messages %} {% if category == 'profile' %}
           <div class="profile-flash{% if message == 'Profile picture updated.' %} is-success{% endif %}">{{ message }}</div>
@@ -11,32 +10,15 @@ content_main %}
     <div class="avatar-large">
       {% if current_user.profile_pic %}
       <img src="{{ current_user.profile_pic }}" alt="Avatar" />
-      <form action="/profile/remove" method="post">
-        <button
-          type="submit"
-          class="btn-remove-avatar"
-          aria-label="Remove picture"
-        >
-          ×
-        </button>
-      </form>
       {% else %}
       <div class="avatar-placeholder">{{ current_user.username[0]|upper }}</div>
       {% endif %}
     </div>
+    <span class="profile-value">{{ current_user.username }}</span>
 
-    <p class="profile-line">
-      <span class="profile-label">Username:</span>
-      <span class="profile-value">{{ current_user.username }}</span>
-    </p>
-
-    <p class="profile-line">
-      <span class="profile-label">Email:</span>
-      <span class="profile-value">{{ current_user.email }}</span>
-    </p>
   </div>
 
-  <div class="profile-card profile-upload">
+  <!-- <div class="profile-card profile-upload">
     <p class="profile-section-title">Profile Picture</p>
     <form
       class="profile-upload-form"
@@ -50,7 +32,7 @@ content_main %}
         <a href="/browse" class="btn-done">Done</a>
       </div>
     </form>
-  </div>
+  </div> -->
 </div>
 
 {% endblock %}
