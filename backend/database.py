@@ -140,24 +140,42 @@ def delete_rating(rating_key):
 
 # User class for Flask-Login
 class User(UserMixin):
-    def __init__(self, user_id, username, email, password_hash, profile_pic=None):
+    def __init__(
+        self,
+        user_id,
+        username,
+        email,
+        password_hash,
+        first_name=None,
+        last_name=None,
+        reviews=None,
+        likes_key=None,
+        bulletin_key=None,
+        upvotes=None,
+        downvotes=None,
+        cred=None,
+        followers_key=None,
+        following_key=None,
+        profile_pic=None,
+    ):
         self.id = user_id
         self.username = username
         self.email = email
         self.password_hash = password_hash
+        self.first_name = first_name
+        self.last_name = last_name
+        self.reviews = reviews
+        self.likes_key = likes_key
+        self.bulletin_key = bulletin_key
+        self.upvotes = upvotes
+        self.downvotes = downvotes
         self.profile_pic = profile_pic
+        self.cred = cred
+        self.followers_key = followers_key
+        self.following_key = following_key
 
-    def get_id(self):  # flask-login needs this
+    def get_id(self):
         return str(self.id)
-
-
-# Helper function to convert DB row to User object
-def _row_to_user(row):
-    if not row:
-        return None
-    user_id, username, email, password_hash = row[0], row[1], row[2], row[3]
-    profile_pic = row[4] if len(row) > 4 else None
-    return User(user_id, username, email, password_hash, profile_pic)
 
 
 # Get user by ID
@@ -165,7 +183,7 @@ def get_user_by_id(user_id):
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute(
-        "SELECT user_info_key, username, email, password, profile_pic, cred, about FROM user_info WHERE user_info_key = ?",
+        "SELECT user_info_key, username, email, password, first_name, last_name, reviews, likes_key, bulletin_key, upvotes, downvotes, cred, followers_key, following_key, profile_pic FROM user_info WHERE user_info_key = ?",
         (user_id,),
     )
     row = cur.fetchone()
@@ -178,12 +196,52 @@ def get_user_by_username_or_email(identifier):
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute(
-        "SELECT user_info_key, username, email, password, profile_pic, cred, about FROM user_info WHERE username = ? OR email = ?",
+        "SELECT user_info_key, username, email, password, first_name, last_name, reviews, likes_key, bulletin_key, upvotes, downvotes, cred, followers_key, following_key, profile_pic FROM user_info WHERE username = ? OR email = ?",
         (identifier, identifier),
     )
     row = cur.fetchone()
     conn.close()
     return _row_to_user(row)
+
+
+# Converts DB row to User object
+def _row_to_user(row):
+    if not row:
+        return None
+    (
+        user_id,
+        username,
+        email,
+        password_hash,
+        first_name,
+        last_name,
+        reviews,
+        likes_key,
+        bulletin_key,
+        upvotes,
+        downvotes,
+        cred,
+        followers_key,
+        following_key,
+        profile_pic,
+    ) = row
+    return User(
+        user_id,
+        username,
+        email,
+        password_hash,
+        first_name,
+        last_name,
+        reviews,
+        likes_key,
+        bulletin_key,
+        upvotes,
+        downvotes,
+        cred,
+        followers_key,
+        following_key,
+        profile_pic,
+    )
 
 
 # Check if username or email exists
@@ -207,7 +265,7 @@ def create_user(username, email, password_plain):
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute(
-        "INSERT INTO user_info (username, email, password, profile_pic, cred, about) VALUES (?,?,?,?)",
+        "INSERT INTO user_info (username, email, password, profile_pic) VALUES (?,?,?,?)",
         (username, email, password_hash, None),
     )
     conn.commit()

@@ -3,7 +3,11 @@ block content_main_class %}gradient-container{% endblock %} {% block
 content_main %}
 {% with messages = get_flashed_messages(with_categories=true) %} {% if messages
 %} {% for category, message in messages %} {% if category == 'profile' %}
-          <div class="profile-flash{% if message == 'Profile picture updated.' %} is-success{% endif %}">{{ message }}</div>
+<div
+  class="profile-flash{% if message == 'Profile picture updated.' %} is-success{% endif %}"
+>
+  {{ message }}
+</div>
 {% endif %} {% endfor %} {% endif %} {% endwith %}
 <div class="profile-stack">
   <div class="profile-card profile-info">
@@ -14,27 +18,99 @@ content_main %}
       <div class="avatar-placeholder">{{ current_user.username[0]|upper }}</div>
       {% endif %}
     </div>
-    <span class="profile-value">{{ current_user.username }}</span>
-    <span class="profile-value">{{ current_user.cred }}</span>
-
-
+      <div>
+      <span class="profile-value">{{ current_user.username }}</span>
+      <br/>
+      <span class="profile-label">Cred:</span>
+      <span class="profile-value">{{ current_user.cred | default(0, true) }}</span>
+      </div>
   </div>
 
-  <!-- <div class="profile-card profile-upload">
-    <p class="profile-section-title">Profile Picture</p>
-    <form
-      class="profile-upload-form"
-      action="/profile/upload"
-      method="post"
-      enctype="multipart/form-data"
-    >
-      <input type="file" name="profile_pic" accept="image/*" />
-      <div class="profile-actions">
-        <button type="submit" class="btn-submit">Upload</button>
-        <a href="/browse" class="btn-done">Done</a>
-      </div>
-    </form>
-  </div> -->
+  <div class="profile-card profile-upload">
+   
+  </div>
+
+  <div class="profile-card profile-details">
+    <p class="profile-line">
+      <span class="profile-label">Username:</span>
+      <span class="profile-value">{{ current_user.username }}</span>
+    </p>
+
+    <p class="profile-line">
+      <span class="profile-label">Email:</span>
+      <span class="profile-value">{{ current_user.email }}</span>
+    </p>
+
+    <p class="profile-line">
+      <span class="profile-label">Cred:</span>
+      <span class="profile-value"
+        >{{ current_user.cred | default(0, true) }}</span
+      >
+    </p>
+
+    <p class="profile-line">
+      <span class="profile-label">First name:</span>
+      <span class="profile-value"
+        >{{ current_user.first_name | default('-', true) }}</span
+      >
+    </p>
+
+    <p class="profile-line">
+      <span class="profile-label">Last name:</span>
+      <span class="profile-value"
+        >{{ current_user.last_name | default('-', true) }}</span
+      >
+    </p>
+
+    <p class="profile-line">
+      <span class="profile-label">Reviews:</span>
+      <span class="profile-value"
+        >{{ current_user.reviews | default('-', true) }}</span
+      >
+    </p>
+
+    <p class="profile-line">
+      <span class="profile-label">Likes key:</span>
+      <span class="profile-value"
+        >{{ current_user.likes_key | default(0, true) }}</span
+      >
+    </p>
+
+    <p class="profile-line">
+      <span class="profile-label">Bulletin key:</span>
+      <span class="profile-value"
+        >{{ current_user.bulletin_key | default(0, true) }}</span
+      >
+    </p>
+
+    <p class="profile-line">
+      <span class="profile-label">Upvotes:</span>
+      <span class="profile-value"
+        >{{ current_user.upvotes | default(0, true) }}</span
+      >
+    </p>
+
+    <p class="profile-line">
+      <span class="profile-label">Downvotes:</span>
+      <span class="profile-value"
+        >{{ current_user.downvotes | default(0, true) }}</span
+      >
+    </p>
+
+    <p class="profile-line">
+      <span class="profile-label">Followers key:</span>
+      <span class="profile-value"
+        >{{ current_user.followers_key | default(0, true) }}</span
+      >
+    </p>
+
+    <p class="profile-line">
+      <span class="profile-label">Following key:</span>
+      <span class="profile-value"
+        >{{ current_user.following_key | default(0, true) }}</span
+      >
+    </p>
+  </div>
 </div>
 
 {% endblock %}
