@@ -157,6 +157,7 @@ class User(UserMixin):
         followers_key=None,
         following_key=None,
         profile_pic=None,
+        about=None,
     ):
         self.id = user_id
         self.username = username
@@ -173,6 +174,7 @@ class User(UserMixin):
         self.cred = cred
         self.followers_key = followers_key
         self.following_key = following_key
+        self.about = about
 
     def get_id(self):
         return str(self.id)
@@ -183,7 +185,7 @@ def get_user_by_id(user_id):
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute(
-        "SELECT user_info_key, username, email, password, first_name, last_name, reviews, likes_key, bulletin_key, upvotes, downvotes, cred, followers_key, following_key, profile_pic FROM user_info WHERE user_info_key = ?",
+        "SELECT user_info_key, username, email, password, first_name, last_name, reviews, likes_key, bulletin_key, upvotes, downvotes, cred, followers_key, following_key, profile_pic, about FROM user_info WHERE user_info_key = ?",
         (user_id,),
     )
     row = cur.fetchone()
@@ -196,7 +198,7 @@ def get_user_by_username_or_email(identifier):
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute(
-        "SELECT user_info_key, username, email, password, first_name, last_name, reviews, likes_key, bulletin_key, upvotes, downvotes, cred, followers_key, following_key, profile_pic FROM user_info WHERE username = ? OR email = ?",
+        "SELECT user_info_key, username, email, password, first_name, last_name, reviews, likes_key, bulletin_key, upvotes, downvotes, cred, followers_key, following_key, profile_pic, about FROM user_info WHERE username = ? OR email = ?",
         (identifier, identifier),
     )
     row = cur.fetchone()
@@ -224,6 +226,7 @@ def _row_to_user(row):
         followers_key,
         following_key,
         profile_pic,
+        about,
     ) = row
     return User(
         user_id,
@@ -241,6 +244,7 @@ def _row_to_user(row):
         followers_key,
         following_key,
         profile_pic,
+        about,
     )
 
 

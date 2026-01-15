@@ -1647,6 +1647,11 @@ li button:hover {
   font-weight: 700;
 }
 
+.profile-value-about {
+  font-size: smaller;
+  font-weight: 700;
+}
+
 .profile-actions {
   display: flex;
   gap: 0.6rem;
