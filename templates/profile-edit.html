@@ -10,7 +10,9 @@ content_main %}
 </div>
 {% endif %} {% endfor %} {% endif %} {% endwith %}
 <div class="profile-stack">
-  <div class="profile-card profile-info">
+
+  <div class="profile-card profile-upload-form">   
+    <span class="profile-label">Profile Photo:</span>
     <div class="avatar-large">
       {% if current_user.profile_pic %}
       <img src="{{ current_user.profile_pic }}" alt="Avatar" />
@@ -18,16 +20,6 @@ content_main %}
       <div class="avatar-placeholder">{{ current_user.username[0]|upper }}</div>
       {% endif %}
     </div>
-      <div>
-      <span class="profile-value">{{ current_user.username }}</span>
-      <br/>
-      <span class="profile-label">Cred:</span>
-      <span class="profile-value">{{ current_user.cred | default(0, true) }}</span>
-      </div>
-  </div>
-
-  <div class="profile-card profile-upload-form">   
-    <h3>Upload Profile Picture</h3>
       <form
         action="/profile/upload"
         method="post"
@@ -39,13 +31,28 @@ content_main %}
         <a href="/browse" class="btn-cancel">Done</a>
       </form>
   </div>
+  
+  <div class="profile-card profile-info">
+    <div>  
+    <span class="profile-label">Username:</span>
+    <textarea
+      id="cohesive_reason"
+      name="cohesive_reason"
+      rows="1"
+      cols="20"
+      placeholder="{{ current_user.username }}"
+    ></textarea>
+    <button type="submit" class="btn-submit">Submit</button>
+    </div>
+  </div>
+
   <div class="profile-card edit-about-sectioin">
       <span class="profile-label">About:</span>
       <br/>
     <textarea
       id="cohesive_reason"
       name="cohesive_reason"
-      rows="4"
+      rows="2"
       cols="40"
       placeholder="{{ current_user.about }}"
     ></textarea>
