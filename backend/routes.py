@@ -248,6 +248,15 @@ def profile():
         current_user.profile_pic = None
     return render_template("profile.html")
 
+@app.route("/profile-edit", methods=["GET"])
+@login_required
+def profile_edit():
+    # If the saved picture path doesn't point to a file anymore,
+    # this temporarily set it to None so the template shows the default image.
+    if current_user.profile_pic and not _pic_exists(current_user.profile_pic):
+        current_user.profile_pic = None
+    return render_template("profile-edit.html")
+
 
 # Upload new profile picture
 @app.route("/profile/upload", methods=["POST"])

@@ -2129,12 +2129,27 @@ li button:hover {
 }
 
 .content_main .profile-card {
-  max-width: 520px;
+  max-width: 800px;
   width: 100%;
   margin: 0 auto;
   background: rgba(255, 255, 255, 0.65);
   border: 1px solid var(--border);
   box-shadow: var(--shadow-md);
+}
+
+.profile-card-split{
+  display: flex;
+  width: 100%;
+}
+
+
+.content_main .music-section{
+  width:70%;
+}
+
+
+.content_main .playlist-section{
+  width:30%;
 }
 
 .content_main .profile-info {

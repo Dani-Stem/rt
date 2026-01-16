@@ -23,15 +23,28 @@ content_main %}
       <br/>
       <span class="profile-label">Cred:</span>
       <span class="profile-value">{{ current_user.cred | default(0, true) }}</span>
-      <br/>
-      <span class="profile-value-about">{{ current_user.about }}</span>
       </div>
   </div>
 
-  <div class="profile-card likes-section">
-      <span class="profile-label">Likes:</span>
+  <div class="profile-card about-section">
+      <span class="profile-label">About:</span>
+      <br/>
+      <span class="profile-value-about">{{ current_user.about }}</span>
   </div>
+  <div class="profile-card-split">
+    <div class="profile-card playlist-section">
+        <span class="profile-label">Playlists:</span>
+    </div>
+    <div class="profile-card music-section">
+        <span class="profile-label">Favorites:</span>
+        <br/>
+        <span class="profile-label">Recents:</span>
+    </div>
   </div>
+  <div class="profile-card comments-section">
+      <span class="profile-label">Comments:</span>
+  </div>
+  
 
 </div>
 

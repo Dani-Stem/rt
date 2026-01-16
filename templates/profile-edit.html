@@ -1,72 +1,33 @@
-<!DOCTYPE html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>Profile View - RealTop</title>
-    <link rel="stylesheet" href="/static/style.css" />
-  </head>
-
-  <body>
-    <div class="header">
-      <p>
-        <a href="/">REALTOP</a>
-      </p>
-      <navbar>
-        <a href="" class="btn-nav">HOME</a>
-        <a href="" class="btn-nav">BROWSE</a>
-        <a href="/browse" class="btn-nav">INVITE</a>
-        <a href="" class="btn-nav">FAVORITES</a>
-        <a href="/add" class="btn-nav">CHARTS</a>
-        <a href="" class="btn-nav">GENRES</a>
-        <a href="/add" class="btn-nav">PLAYLIST</a>
-        <a href="" class="btn-nav">NEW</a>
-        <a href="/add" class="btn-nav">TRENDING</a>
-        <input
-        class="search"
-        type="text"
-        value="search..."
-        id="search_name"
-        name="search_name"
-        required
-        />
-        <a href="/add" class="btn-nav">></a>
-      </navbar>
-
+{% extends "base.html" %} {% block title %}Profile - RealTop{% endblock %} {%
+block content_main_class %}gradient-container{% endblock %} {% block
+content_main %}
+{% with messages = get_flashed_messages(with_categories=true) %} {% if messages
+%} {% for category, message in messages %} {% if category == 'profile' %}
+<div
+  class="profile-flash{% if message == 'Profile picture updated.' %} is-success{% endif %}"
+>
+  {{ message }}
+</div>
+{% endif %} {% endfor %} {% endif %} {% endwith %}
+<div class="profile-stack">
+  <div class="profile-card profile-info">
+    <div class="avatar-large">
+      {% if current_user.profile_pic %}
+      <img src="{{ current_user.profile_pic }}" alt="Avatar" />
+      {% else %}
+      <div class="avatar-placeholder">{{ current_user.username[0]|upper }}</div>
+      {% endif %}
     </div>
-
-    <main>
-      {% with messages = get_flashed_messages(with_categories=true) %} {% if
-      messages %} {% for category, message in messages %} {% if category ==
-      'profile' %}
-      <div
-        style="
-          padding: 2rem;
-          color: #000000;
-          background-color: #80F7FF;
-          background-color: linear-gradient(180deg, rgba(128, 247, 255, 1) 43%, rgba(34, 193, 195, 1) 100%);
-          border-bottom: .2vw solid #000;
-          max-width: 360px;
-          margin: 0 0 12px 0;
-          font-size: 0.85rem;
-        "
-      >
-        {{ message }}
+      <div>
+      <span class="profile-value">{{ current_user.username }}</span>
+      <br/>
+      <span class="profile-label">Cred:</span>
+      <span class="profile-value">{{ current_user.cred | default(0, true) }}</span>
       </div>
-      {% endif %} {% endfor %} {% endif %} {% endwith %}
-      <div class="profile-card">
-        <div class="profile-card-left">
-        <div class="profile-card-left-left">
-        <div class="avatar-large">
-          {% if current_user.profile_pic %}
-          <img src="{{ current_user.profile_pic }}" alt="Avatar" />
-          {% else %}
-          <div class="avatar-placeholder">
-            {{ current_user.username[0]|upper }}
-          </div>
-          {% endif %}
-        </div>      
+  </div>
 
-      <h3>Upload Profile Picture</h3>
+  <div class="profile-card profile-upload-form">   
+    <h3>Upload Profile Picture</h3>
       <form
         action="/profile/upload"
         method="post"
@@ -77,155 +38,22 @@
         <button type="submit" class="btn-submit">Upload</button>
         <a href="/browse" class="btn-cancel">Done</a>
       </form>
+  </div>
+  <div class="profile-card edit-about-sectioin">
+      <span class="profile-label">About:</span>
+      <br/>
+    <textarea
+      id="cohesive_reason"
+      name="cohesive_reason"
+      rows="4"
+      cols="40"
+      placeholder="{{ current_user.about }}"
+    ></textarea>
+    <button type="submit" class="btn-submit">Submit</button>
 
-        </div>
-        <div class="profile-card-left-right">
+  </div>
   
-        </div>
-        </div>
-        <div class="profile-card-right">
-          test: testing
-          <br/> 
-          test: testing
-          <br/>
-          test: testing
-          <br/> 
-          test: testing
-          <br/>
-          test: testing
-        </div>
-      </div>
 
-      <div class="content-body">
-        <div class="content-body-left">
-        <div class="card">
-          <h3>about card</h3>
-          testing
-          <br/> 
-          testing
-          <br/>
-          testing
-          <br/> 
-          testing
+</div>
 
-        </div>
-        <div class="card">
-          <h3>playlist card</h3>
-          testing
-          <br/> 
-          testing
-          <br/> 
-          testing
-          <br/>
-          testing
-          <br/>
-          testing
-          <br/> 
-          testing
-          <br/>
-          testing
-          <br/> 
-          testing
-          <br/>
-          testing
-          <br/>
-          testing
-          <br/> 
-          testing
-          <br/>
-          testing
-          <br/> 
-          testing
-          <br/>
-          testing
-          <br/>
-          testing
-          <br/>
-          testing
-          <br/> 
-          testing
-          <br/>
-          testing
-          <br/> 
-          testing
-          <br/>
-          testing
-          <br/>
-          testing
-          <br/> 
-          testing
-          <br/>
-          testing
-          <br/> 
-          testing
-          <br/>
-          testing
-        </div>
-        </div>
-        <div class="content-body-right">
-        <div class="card">
-          <h3>likes card</h3>
-          testing
-          <br/> 
-          testing
-          <br/>
-          testing
-          <br/> 
-          testing
-        </div>
-        <div class="card">
-          <h3>music card</h3>
-          testing
-          <br/> 
-          testing
-          <br/>
-          testing
-          <br/> 
-          testing
-          <br/>
-          testing
-          <br/>
-          testing
-          <br/>
-          testing
-          <br/> 
-          testing
-          <br/>
-          testing
-          <br/> 
-          testing
-          <br/>
-          testing
-          <br/>
-          testing
-          <br/> 
-          testing
-          <br/>
-          testing
-          <br/> 
-          testing
-          <br/>
-          testing
-        </div>
-
-        <div class="card">
-          <h3>comments card</h3>
-          <br/>
-          <br/>
-          <br/>
-          testing
-          <br/> 
-          testing
-          <br/>
-          testing
-          <br/> 
-          testing
-          <br/>
-          testing
-        </div>
-        </div>
-      </div>
-
-    </main>
-  </body>
-</html>
+{% endblock %}
