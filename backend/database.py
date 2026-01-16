@@ -282,6 +282,17 @@ def verify_password(stored_hash, password_plain):
     return check_password_hash(stored_hash, password_plain)
 
 
+# Update the user's profile info
+def update_profile_info(user_id, username, about):
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute(
+        "UPDATE user_info SET username = ?, about = ?  WHERE user_info_key = ?",
+        (about, username, user_id),
+    )
+    conn.commit()
+    conn.close()
+
 # Update the user's profile picture
 def update_profile_pic(user_id, profile_pic_path):
     conn = get_db_connection()

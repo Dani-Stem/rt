@@ -24,6 +24,9 @@ content_main %}
       <span class="profile-label">Cred:</span>
       <span class="profile-value">{{ current_user.cred | default(0, true) }}</span>
       </div>
+      <label class="btn-nav modal-trigger" for="bulletin-add-toggle">
+        FOLLOW
+      </label>
   </div>
 
   <div class="profile-card about-section">
@@ -43,6 +46,10 @@ content_main %}
   </div>
   <div class="profile-card comments-section">
       <span class="profile-label">Comments:</span>
+      
+      <label class="btn-nav modal-trigger" for="bulletin-add-toggle">
+        ADD
+      </label>
   </div>
   
 

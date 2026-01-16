@@ -18,10 +18,12 @@ from backend.database import (
     update_rating,
     delete_rating,
     create_user,
+    get_user_by_id,
     get_user_by_username_or_email,
     verify_password,
     get_rating_owner,
     update_profile_pic,
+    update_profile_info,
     get_profile_pic_by_username,
 )
 
@@ -248,6 +250,7 @@ def profile():
         current_user.profile_pic = None
     return render_template("profile.html")
 
+#profile-edit 
 @app.route("/profile-edit", methods=["GET"])
 @login_required
 def profile_edit():
@@ -257,6 +260,28 @@ def profile_edit():
         current_user.profile_pic = None
     return render_template("profile-edit.html")
 
+#edit-profile 
+@app.route("/edit-profile", methods=["GET", "POST"])
+@login_required
+def edit_profile():
+    if request.method == "POST":
+        username = request.form.get("username", "").strip()
+        about = request.form.get("about", "").strip()
+        if username or about:
+            edit_profile(
+                current_user.username,
+                current_user.about,
+            )
+
+    update_profile_info(current_user.id, current_user.username, current_user.about)
+
+    user = get_user_by_id(current_user.id)
+    if not user:
+        return redirect("/profile-edit")
+    return render_template(
+        "profile-edit.html",
+        user=user,
+        form_action=f"/edit/{current_user.id}",)
 
 # Upload new profile picture
 @app.route("/profile/upload", methods=["POST"])

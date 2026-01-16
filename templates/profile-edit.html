@@ -28,27 +28,39 @@ content_main %}
         <input type="file" name="profile_pic" accept="image/*" />
         <br /><br />
         <button type="submit" class="btn-submit">Upload</button>
-        <a href="/browse" class="btn-cancel">Done</a>
       </form>
   </div>
-  
+
   <div class="profile-card profile-info">
+    <form
+    action="/profile-edit"
+    method="post"
+    class="edit-profile-form"
+    >
     <div>  
     <span class="profile-label">Username:</span>
     <textarea
-      id="cohesive_reason"
-      name="cohesive_reason"
+      id="username_edit"
+      name="username_edit"
       rows="1"
       cols="20"
       placeholder="{{ current_user.username }}"
     ></textarea>
+    <div class="form-actions">
     <button type="submit" class="btn-submit">Submit</button>
     </div>
+    </div>
+    </form>
   </div>
 
   <div class="profile-card edit-about-sectioin">
-      <span class="profile-label">About:</span>
-      <br/>
+    <form
+    action="/profile-edit"
+    method="post"
+    class="edit-profile-form"
+    >
+    <span class="profile-label">About:</span>
+    <br/>
     <textarea
       id="cohesive_reason"
       name="cohesive_reason"
@@ -56,8 +68,10 @@ content_main %}
       cols="40"
       placeholder="{{ current_user.about }}"
     ></textarea>
+    <div class="form-actions">
     <button type="submit" class="btn-submit">Submit</button>
-
+    </div>
+    </form>
   </div>
   
 
