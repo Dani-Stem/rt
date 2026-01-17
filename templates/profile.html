@@ -10,23 +10,23 @@ content_main %}
 </div>
 {% endif %} {% endfor %} {% endif %} {% endwith %}
 <div class="profile-stack">
-  <div class="profile-card profile-info">
-    <div class="avatar-large">
-      {% if current_user.profile_pic %}
-      <img src="{{ current_user.profile_pic }}" alt="Avatar" />
-      {% else %}
-      <div class="avatar-placeholder">{{ current_user.username[0]|upper }}</div>
-      {% endif %}
-    </div>
-      <div>
-      <span class="profile-value">{{ current_user.username }}</span>
-      <br/>
-      <span class="profile-label">Cred:</span>
-      <span class="profile-value">{{ current_user.cred | default(0, true) }}</span>
+  <input class="modal-toggle" id="comment-add-toggle" type="checkbox" />
+  <div class="profile-card profile-info profile-header">
+    <button class="btn-nav profile-follow" type="button">FOLLOW</button>
+    <div class="profile-identity">
+      <span class="profile-value profile-username">{{ current_user.username }}</span>
+      <div class="avatar-large">
+        {% if current_user.profile_pic %}
+        <img src="{{ current_user.profile_pic }}" alt="Avatar" />
+        {% else %}
+        <div class="avatar-placeholder">{{ current_user.username[0]|upper }}</div>
+        {% endif %}
       </div>
-      <label class="btn-nav modal-trigger" for="bulletin-add-toggle">
-        FOLLOW
-      </label>
+      <div class="profile-cred">
+        <span class="profile-label">Cred:</span>
+        <span class="profile-value">{{ current_user.cred | default(0, true) }}</span>
+      </div>
+    </div>
   </div>
 
   <div class="profile-card about-section">
@@ -45,14 +45,128 @@ content_main %}
     </div>
   </div>
   <div class="profile-card comments-section">
-      <span class="profile-label">Comments:</span>
-      
-      <label class="btn-nav modal-trigger" for="bulletin-add-toggle">
-        ADD
-      </label>
+      <div class="comments-head">
+        <span class="profile-label">Comments:</span>
+        <label class="btn-nav modal-trigger" for="comment-add-toggle">
+          ADD
+        </label>
+      </div>
+      {% if comments %}
+      <ul class="comment-list">
+        {% for comment in comments %}
+        <li class="comment-item">
+          <input
+            class="modal-toggle"
+            id="comment-edit-{{ comment.comment_id }}"
+            type="checkbox"
+          />
+          <div class="comment-content">
+            {% if comment.profile_pic %}
+            <img class="avatar" src="{{ comment.profile_pic }}" alt="Avatar" />
+            {% else %}
+            <span class="avatar-initial">
+              {{ comment.username[0]|upper }}
+            </span>
+            {% endif %}
+            <div class="comment-body">
+              <span class="comment-username">@{{ comment.username }}</span>
+              <span class="comment-text">{{ comment.message }}</span>
+            </div>
+          </div>
+          <div class="comment-actions">
+            <label class="comment-edit-btn" for="comment-edit-{{ comment.comment_id }}">
+              Edit
+            </label>
+            <form
+              action="/profile/comments/delete/{{ comment.comment_id }}"
+              method="post"
+              class="comment-remove-form"
+            >
+              <button
+                type="submit"
+                class="comment-remove-btn"
+                aria-label="Delete comment"
+              >
+                ×
+              </button>
+            </form>
+          </div>
+          <div class="modal modal-comment-edit">
+            <label class="modal-backdrop" for="comment-edit-{{ comment.comment_id }}"></label>
+            <form
+              class="modal-card"
+              role="dialog"
+              aria-modal="true"
+              method="post"
+              action="/profile/comments/edit/{{ comment.comment_id }}"
+            >
+              <div class="modal-head">
+                <p class="modal-title">Edit Comment</p>
+                <label
+                  class="modal-close"
+                  for="comment-edit-{{ comment.comment_id }}"
+                  aria-label="Close"
+                >
+                  ×
+                </label>
+              </div>
+              <div class="form-group">
+                <textarea
+                  name="comment"
+                  rows="3"
+                  required
+                >{{ comment.message }}</textarea>
+              </div>
+              <div class="modal-actions">
+                <button type="submit" class="btn-nav">Save</button>
+                <label class="btn-nav modal-secondary" for="comment-edit-{{ comment.comment_id }}">
+                  Cancel
+                </label>
+              </div>
+            </form>
+          </div>
+          <span class="comment-time">{{ comment.time_ago }}</span>
+        </li>
+        {% endfor %}
+      </ul>
+      {% else %}
+      <span class="profile-value-about">No comments yet.</span>
+      {% endif %}
   </div>
   
 
+  <div class="modal">
+    <label class="modal-backdrop" for="comment-add-toggle"></label>
+    <form
+      class="modal-card"
+      role="dialog"
+      aria-modal="true"
+      method="post"
+      action="/profile/comments"
+    >
+      <div class="modal-head">
+        <p class="modal-title">Add Comment</p>
+        <label class="modal-close" for="comment-add-toggle" aria-label="Close">
+          ×
+        </label>
+      </div>
+      <div class="form-group">
+        <textarea
+          id="comment"
+          name="comment"
+          rows="3"
+          placeholder="Write a comment..."
+          required
+        ></textarea>
+      </div>
+      <div class="modal-actions">
+        <button type="submit" class="btn-nav">Comment</button>
+        <label class="btn-nav modal-secondary" for="comment-add-toggle">
+          Cancel
+        </label>
+      </div>
+    </form>
+  </div>
 </div>
 
 {% endblock %}

@@ -19,6 +19,17 @@ content_main %}
       {% else %}
       <div class="avatar-placeholder">{{ current_user.username[0]|upper }}</div>
       {% endif %}
+      {% if current_user.profile_pic %}
+      <form action="/profile/remove" method="post" class="profile-remove-form">
+        <button
+          type="submit"
+          class="btn-remove-avatar"
+          aria-label="Remove profile picture"
+        >
+          <span class="btn-remove-icon">×</span>
+        </button>
+      </form>
+      {% endif %}
     </div>
       <form
         action="/profile/upload"
@@ -31,48 +42,35 @@ content_main %}
       </form>
   </div>
 
-  <div class="profile-card profile-info">
-    <form
-    action="/profile-edit"
-    method="post"
-    class="edit-profile-form"
-    >
-    <div>  
-    <span class="profile-label">Username:</span>
-    <textarea
-      id="username_edit"
-      name="username_edit"
-      rows="1"
-      cols="20"
-      placeholder="{{ current_user.username }}"
-    ></textarea>
-    <div class="form-actions">
-    <button type="submit" class="btn-submit">Submit</button>
+  <form action="/profile-edit" method="post" class="edit-profile-form">
+    <div class="profile-card profile-info profile-edit-card">
+      <div class="profile-edit-field">
+        <span class="profile-label">Username:</span>
+        <textarea
+          id="username_edit"
+          name="username_edit"
+          rows="1"
+          cols="20"
+          placeholder="{{ current_user.username }}"
+        >{{ current_user.username }}</textarea>
+      </div>
+      <div class="profile-edit-field edit-about-sectioin">
+        <span class="profile-label">About:</span>
+        <textarea
+          id="about"
+          name="about"
+          rows="2"
+          cols="40"
+          placeholder="{{ current_user.about }}"
+        >{{ current_user.about }}</textarea>
+      </div>
     </div>
-    </div>
-    </form>
-  </div>
 
-  <div class="profile-card edit-about-sectioin">
-    <form
-    action="/profile-edit"
-    method="post"
-    class="edit-profile-form"
-    >
-    <span class="profile-label">About:</span>
-    <br/>
-    <textarea
-      id="cohesive_reason"
-      name="cohesive_reason"
-      rows="2"
-      cols="40"
-      placeholder="{{ current_user.about }}"
-    ></textarea>
-    <div class="form-actions">
-    <button type="submit" class="btn-submit">Submit</button>
+    <div class="form-actions profile-edit-actions">
+      <button type="submit" class="btn-submit">Submit</button>
+      <a class="btn-cancel" href="/profile">Cancel</a>
     </div>
-    </form>
-  </div>
+  </form>
   
 
 </div>

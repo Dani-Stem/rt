@@ -7,6 +7,7 @@ from flask import (
     current_app,
     session,
 )
+from datetime import datetime, timezone
 from werkzeug.utils import secure_filename
 from pathlib import Path
 from flask_login import login_user, logout_user, login_required, current_user
@@ -25,6 +26,10 @@ from backend.database import (
     update_profile_pic,
     update_profile_info,
     get_profile_pic_by_username,
+    get_profile_comments as get_profile_comments_db,
+    add_profile_comment as add_profile_comment_db,
+    update_profile_comment as update_profile_comment_db,
+    delete_profile_comment as delete_profile_comment_db,
 )
 
 # Initialize routes with Blueprint
@@ -244,44 +249,55 @@ def add():
 @app.route("/profile", methods=["GET"])
 @login_required
 def profile():
-    # If the saved picture path doesn't point to a file anymore,
-    # this temporarily set it to None so the template shows the default image.
     if current_user.profile_pic and not _pic_exists(current_user.profile_pic):
         current_user.profile_pic = None
-    return render_template("profile.html")
+    stored_comments = get_profile_comments_db(current_user.id)
+    display_comments = []
+    for comment in stored_comments:
+        profile_pic = comment.get("profile_pic")
+        if profile_pic and not _pic_exists(profile_pic):
+            profile_pic = None
+        display_comments.append(
+            {
+                "comment_id": comment.get("comment_id"),
+                "message": comment.get("message", ""),
+                "username": comment.get("username", current_user.username),
+                "profile_pic": profile_pic,
+                "author_user_id": comment.get("author_user_id"),
+                "time_ago": _format_time_ago(comment.get("created_at")),
+            }
+        )
+    return render_template("profile.html", comments=display_comments)
 
-#profile-edit 
-@app.route("/profile-edit", methods=["GET"])
+
+# profile-edit
+@app.route("/profile-edit", methods=["GET", "POST"])
 @login_required
 def profile_edit():
-    # If the saved picture path doesn't point to a file anymore,
-    # this temporarily set it to None so the template shows the default image.
     if current_user.profile_pic and not _pic_exists(current_user.profile_pic):
         current_user.profile_pic = None
+    if request.method == "POST":
+        username = request.form.get("username_edit", "").strip()
+        about = request.form.get("about", "").strip()
+        updated_username = username if username else current_user.username
+        updated_about = about if about else current_user.about
+        if (
+            updated_username != current_user.username
+            or updated_about != current_user.about
+        ):
+            update_profile_info(current_user.id, updated_username, updated_about)
+            current_user.username = updated_username
+            current_user.about = updated_about
+        return redirect("/profile")
     return render_template("profile-edit.html")
 
-#edit-profile 
+
+# edit-profile
 @app.route("/edit-profile", methods=["GET", "POST"])
 @login_required
 def edit_profile():
-    if request.method == "POST":
-        username = request.form.get("username", "").strip()
-        about = request.form.get("about", "").strip()
-        if username or about:
-            edit_profile(
-                current_user.username,
-                current_user.about,
-            )
+    return profile_edit()
 
-    update_profile_info(current_user.id, current_user.username, current_user.about)
-
-    user = get_user_by_id(current_user.id)
-    if not user:
-        return redirect("/profile-edit")
-    return render_template(
-        "profile-edit.html",
-        user=user,
-        form_action=f"/edit/{current_user.id}",)
 
 # Upload new profile picture
 @app.route("/profile/upload", methods=["POST"])
@@ -290,10 +306,10 @@ def upload_profile_pic():
     file = request.files.get("profile_pic")
     if not file or file.filename == "":
         flash("No file selected.", "profile")
-        return redirect("/profile")
+        return redirect("/profile-edit")
     if not _allowed_file(file.filename):
         flash("Unsupported file type.", "profile")
-        return redirect("/profile")
+        return redirect("/profile-edit")
 
     upload_folder = Path(current_app.config.get("UPLOAD_FOLDER"))
     upload_folder.mkdir(parents=True, exist_ok=True)
@@ -306,7 +322,7 @@ def upload_profile_pic():
     rel_path = f"/static/uploads/{filename}"
     update_profile_pic(current_user.id, rel_path)
     flash("Profile picture updated.", "profile")
-    return redirect("/profile")
+    return redirect("/profile-edit")
 
 
 # Remove the user's profile picture
@@ -315,6 +331,39 @@ def upload_profile_pic():
 def remove_profile_pic():
     update_profile_pic(current_user.id, None)
     flash("Profile picture removed.", "profile")
+    return redirect("/profile-edit")
+
+
+# Add profile comment
+@app.route("/profile/comments", methods=["POST"])
+@login_required
+def add_profile_comment():
+    message = request.form.get("comment", "").strip()
+    if message:
+        add_profile_comment_db(
+            current_user.id,
+            current_user.id,
+            message,
+            datetime.now(timezone.utc).isoformat(),
+        )
+    return redirect("/profile")
+
+
+# Delete profile comment
+@app.route("/profile/comments/delete/<int:comment_id>", methods=["POST"])
+@login_required
+def delete_profile_comment(comment_id):
+    delete_profile_comment_db(comment_id, current_user.id)
+    return redirect("/profile")
+
+
+# Edit profile comment
+@app.route("/profile/comments/edit/<int:comment_id>", methods=["POST"])
+@login_required
+def edit_profile_comment(comment_id):
+    message = request.form.get("comment", "").strip()
+    if message:
+        update_profile_comment_db(comment_id, current_user.id, message)
     return redirect("/profile")
 
 
@@ -467,3 +516,42 @@ def _get_owner_pics_for_ratings(ratings):
             picture_path = None
         owner_pics[username] = picture_path
     return owner_pics
+
+
+def _format_time_ago(iso_timestamp: str) -> str:
+    if not iso_timestamp:
+        return "just now"
+    try:
+        parsed = datetime.fromisoformat(iso_timestamp)
+    except ValueError:
+        return "just now"
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=timezone.utc)
+    now = datetime.now(timezone.utc)
+    delta = now - parsed
+    seconds = max(0, int(delta.total_seconds()))
+    if seconds < 60:
+        return "just now"
+    minutes = seconds // 60
+    if minutes < 60:
+        unit = "minute" if minutes == 1 else "minutes"
+        return f"{minutes} {unit} ago"
+    hours = minutes // 60
+    if hours < 24:
+        unit = "hour" if hours == 1 else "hours"
+        return f"{hours} {unit} ago"
+    days = hours // 24
+    if days < 7:
+        unit = "day" if days == 1 else "days"
+        return f"{days} {unit} ago"
+    weeks = days // 7
+    if weeks < 5:
+        unit = "week" if weeks == 1 else "weeks"
+        return f"{weeks} {unit} ago"
+    months = days // 30
+    if months < 12:
+        unit = "month" if months == 1 else "months"
+        return f"{months} {unit} ago"
+    years = days // 365
+    unit = "year" if years == 1 else "years"
+    return f"{years} {unit} ago"

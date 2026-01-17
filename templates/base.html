@@ -312,5 +312,16 @@
         </div>
       </div>
     </div>
+    <script>
+      const textareas = document.querySelectorAll("textarea");
+      const autoResize = (el) => {
+        el.style.height = "auto";
+        el.style.height = `${el.scrollHeight}px`;
+      };
+      textareas.forEach((el) => {
+        autoResize(el);
+        el.addEventListener("input", () => autoResize(el));
+      });
+    </script>
   </body>
 </html>

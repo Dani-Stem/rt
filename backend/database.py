@@ -288,10 +288,11 @@ def update_profile_info(user_id, username, about):
     cur = conn.cursor()
     cur.execute(
         "UPDATE user_info SET username = ?, about = ?  WHERE user_info_key = ?",
-        (about, username, user_id),
+        (username, about, user_id),
     )
     conn.commit()
     conn.close()
+
 
 # Update the user's profile picture
 def update_profile_pic(user_id, profile_pic_path):
@@ -316,3 +317,91 @@ def get_profile_pic_by_username(username):
     row = cur.fetchone()
     conn.close()
     return row[0] if row and row[0] else None
+
+
+# Profile Comments
+def get_profile_comments(profile_user_id):
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute(
+        """
+        SELECT
+            profile_comments.comment_id,
+            profile_comments.message,
+            profile_comments.created_at,
+            user_info.user_info_key,
+            user_info.username,
+            user_info.profile_pic
+        FROM profile_comments
+        JOIN user_info ON user_info.user_info_key = profile_comments.author_user_id
+        WHERE profile_comments.profile_user_id = ?
+        ORDER BY profile_comments.comment_id ASC
+        """,
+        (profile_user_id,),
+    )
+    rows = cur.fetchall()
+    conn.close()
+    comments = []
+    for row in rows:
+        (
+            comment_id,
+            message,
+            created_at,
+            author_user_id,
+            username,
+            profile_pic,
+        ) = row
+        comments.append(
+            {
+                "comment_id": comment_id,
+                "message": message,
+                "created_at": created_at,
+                "author_user_id": author_user_id,
+                "username": username,
+                "profile_pic": profile_pic,
+            }
+        )
+    return comments
+
+
+def add_profile_comment(profile_user_id, author_user_id, message, created_at):
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute(
+        """
+        INSERT INTO profile_comments (profile_user_id, author_user_id, message, created_at)
+        VALUES (?,?,?,?)
+        """,
+        (profile_user_id, author_user_id, message, created_at),
+    )
+    conn.commit()
+    conn.close()
+
+
+def update_profile_comment(comment_id, author_user_id, message):
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute(
+        """
+        UPDATE profile_comments
+        SET message = ?
+        WHERE comment_id = ? AND author_user_id = ?
+        """,
+        (message, comment_id, author_user_id),
+    )
+    conn.commit()
+    conn.close()
+
+
+def delete_profile_comment(comment_id, author_user_id):
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute(
+        """
+        DELETE FROM profile_comments
+        WHERE comment_id = ? AND author_user_id = ?
+        """,
+        (comment_id, author_user_id),
+    )
+    conn.commit()
+    conn.close()

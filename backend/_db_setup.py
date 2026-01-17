@@ -214,5 +214,17 @@ def init_db():
         """
     )
 
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS profile_comments (
+        comment_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        profile_user_id INTEGER,
+        author_user_id INTEGER,
+        message VARCHAR(500),
+        created_at TEXT
+        )
+        """
+    )
+
     conn.commit()
     conn.close()
