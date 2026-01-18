@@ -14,7 +14,6 @@ content_main %}
   <div class="profile-card profile-info profile-header">
     <button class="btn-nav profile-follow" type="button">FOLLOW</button>
     <div class="profile-identity">
-      <span class="profile-value profile-username">{{ current_user.username }}</span>
       <div class="avatar-large">
         {% if current_user.profile_pic %}
         <img src="{{ current_user.profile_pic }}" alt="Avatar" />
@@ -22,9 +21,12 @@ content_main %}
         <div class="avatar-placeholder">{{ current_user.username[0]|upper }}</div>
         {% endif %}
       </div>
-      <div class="profile-cred">
-        <span class="profile-label">Cred:</span>
-        <span class="profile-value">{{ current_user.cred | default(0, true) }}</span>
+      <div class="profile-identity-text">
+        <span class="profile-value profile-username">{{ current_user.username }}</span>
+        <div class="profile-cred">
+          <span class="profile-label">Cred:</span>
+          <span class="profile-value">{{ current_user.cred | default(0, true) }}</span>
+        </div>
       </div>
     </div>
   </div>

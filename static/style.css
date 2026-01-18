@@ -2295,21 +2295,28 @@ li button:hover {
 }
 
 .content_main .profile-header {
-  justify-content: center;
-  text-align: center;
+  justify-content: flex-start;
+  text-align: left;
 }
 
 .content_main .profile-identity {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
-  gap: 0.5rem;
+  gap: 1rem;
+  margin-right: auto;
 }
 
 .content_main .profile-follow {
   position: absolute;
   top: 14px;
   right: 14px;
+}
+
+.content_main .profile-identity-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
 }
 
 .content_main .profile-cred {

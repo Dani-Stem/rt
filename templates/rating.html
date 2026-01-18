@@ -11,7 +11,7 @@ content_main %}
     <div class="summary-main">
       <div style="display: flex; align-items: center; gap: 8px">
         {% if owner %}
-        <span class="avatar-wrap">
+        <span class="avatar-wrap"  onclick="window.location='/profile/{{ rating[9] }}'">
           {% if owner_pic %}
           <img class="avatar" src="{{ owner_pic }}" alt="{{ owner }} avatar" />
           {% else %}
