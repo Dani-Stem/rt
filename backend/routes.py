@@ -291,15 +291,19 @@ def profile_edit():
     if request.method == "POST":
         username = request.form.get("username_edit", "").strip()
         about = request.form.get("about", "").strip()
+        favorites0 = request.form.get("favorites0", "").strip()
         updated_username = username if username else current_user.username
         updated_about = about if about else current_user.about
+        updated_favorites0 = favorites0 if favorites0 else current_user.favorites0
         if (
             updated_username != current_user.username
             or updated_about != current_user.about
+            or updated_favorites0 != current_user.favorites0
         ):
-            update_profile_info(current_user.id, updated_username, updated_about)
+            update_profile_info(current_user.id, updated_username, updated_about, updated_favorites0)
             current_user.username = updated_username
             current_user.about = updated_about
+            current_user.favorites0 = updated_favorites0
         return redirect("/profile")
     return render_template("profile-edit.html")
 
