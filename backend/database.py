@@ -158,6 +158,10 @@ class User(UserMixin):
         following_key=None,
         profile_pic=None,
         about=None,
+        favorites0=None,
+        favorites1=None,
+        favorites2=None,
+        favorites3=None,
     ):
         self.id = user_id
         self.username = username
@@ -175,6 +179,10 @@ class User(UserMixin):
         self.followers_key = followers_key
         self.following_key = following_key
         self.about = about
+        self.favorites0 = favorites0
+        self.favorites1 = favorites1
+        self.favorites2 = favorites2
+        self.favorites3 = favorites3
 
     def get_id(self):
         return str(self.id)
@@ -185,7 +193,7 @@ def get_user_by_id(user_id):
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute(
-        "SELECT user_info_key, username, email, password, first_name, last_name, reviews, likes_key, bulletin_key, upvotes, downvotes, cred, followers_key, following_key, profile_pic, about FROM user_info WHERE user_info_key = ?",
+        "SELECT user_info_key, username, email, password, first_name, last_name, reviews, likes_key, bulletin_key, upvotes, downvotes, cred, followers_key, following_key, profile_pic, about, favorites0, favorites1, favorites2, favorites3 FROM user_info WHERE user_info_key = ?",
         (user_id,),
     )
     row = cur.fetchone()
@@ -198,7 +206,7 @@ def get_user_by_username_or_email(identifier):
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute(
-        "SELECT user_info_key, username, email, password, first_name, last_name, reviews, likes_key, bulletin_key, upvotes, downvotes, cred, followers_key, following_key, profile_pic, about FROM user_info WHERE username = ? OR email = ?",
+        "SELECT user_info_key, username, email, password, first_name, last_name, reviews, likes_key, bulletin_key, upvotes, downvotes, cred, followers_key, following_key, profile_pic, about, favorites0, favorites1, favorites2, favorites3 FROM user_info WHERE username = ? OR email = ?",
         (identifier, identifier),
     )
     row = cur.fetchone()
@@ -227,6 +235,10 @@ def _row_to_user(row):
         following_key,
         profile_pic,
         about,
+        favorites0,
+        favorites1,
+        favorites2,
+        favorites3,
     ) = row
     return User(
         user_id,
@@ -245,6 +257,10 @@ def _row_to_user(row):
         following_key,
         profile_pic,
         about,
+        favorites0,
+        favorites1,
+        favorites2,
+        favorites3
     )
 
 
@@ -283,12 +299,12 @@ def verify_password(stored_hash, password_plain):
 
 
 # Update the user's profile info
-def update_profile_info(user_id, username, about):
+def update_profile_info(user_id, username, about, favorites0):
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute(
         "UPDATE user_info SET username = ?, about = ?  WHERE user_info_key = ?",
-        (username, about, user_id),
+        (username, about, favorites0, user_id),
     )
     conn.commit()
     conn.close()

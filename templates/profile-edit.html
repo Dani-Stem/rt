@@ -76,6 +76,44 @@ content_main %}
     <div class="profile-card profile-info profile-edit-card">
       <div class="profile-edit-field">
         <span class="profile-label">Favorites:</span>
+      <ul>
+        <li>
+        <span class="profile-value-favorites">{{ current_user.favorites0 }}</span>
+        <button
+          type="submit"
+          aria-label="Remove profile picture"
+        >
+          <span class="btn-remove-icon">×</span>
+        </button>
+        </li>
+        <li>
+        <span class="profile-value-favorites">{{ current_user.favorites1 }}</span>
+        <button
+          type="submit"
+          aria-label="Remove profile picture"
+        >
+          <span class="btn-remove-icon">×</span>
+        </button>
+        </li>
+        <li>
+        <span class="profile-value-favorites">{{ current_user.favorites2 }}</span>
+        <button
+          type="submit"
+          aria-label="Remove profile picture"
+        >
+        <span class="btn-remove-icon">×</span>
+        </button>
+        </li>
+        <li>
+        <span class="profile-value-favorites">{{ current_user.favorites3 }}</span>
+        <button
+          type="submit"
+          aria-label="Remove profile picture"
+        >
+        <span class="btn-remove-icon">×</span>
+        </button>
+        </li>
+      </ul>
       </div>
     </div>
 
