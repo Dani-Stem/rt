@@ -3,6 +3,51 @@
 {% block content_main_class %}gradient-container{% endblock %}
 {% block content_main %}
           <p class="title_search">Favorites</p>
-          <p class="auth-hint">No favorites yet.</p>
+
+          <form action="/profile-edit" method="post" class="edit-profile-form">
+    <div class="profile-card profile-info profile-edit-card">
+      <div class="profile-edit-field">
+      <ul>
+        <li>
+        <span class="profile-value-favorites">{{ current_user.favorites0 }}</span>
+        <button
+          type="submit"
+          aria-label="Remove profile picture"
+        >
+          <span class="btn-remove-icon">×</span>
+        </button>
+        </li>
+        <li>
+        <span class="profile-value-favorites">{{ current_user.favorites1 }}</span>
+        <button
+          type="submit"
+          aria-label="Remove profile picture"
+        >
+          <span class="btn-remove-icon">×</span>
+        </button>
+        </li>
+        <li>
+        <span class="profile-value-favorites">{{ current_user.favorites2 }}</span>
+        <button
+          type="submit"
+          aria-label="Remove profile picture"
+        >
+        <span class="btn-remove-icon">×</span>
+        </button>
+        </li>
+        <li>
+        <span class="profile-value-favorites">{{ current_user.favorites3 }}</span>
+        <button
+          type="submit"
+          aria-label="Remove profile picture"
+        >
+        <span class="btn-remove-icon">×</span>
+        </button>
+        </li>
+      </ul>
+      </div>
+    </div>
+
+  </form>
         
 {% endblock %}

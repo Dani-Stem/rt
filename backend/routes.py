@@ -74,7 +74,19 @@ def browse():
 
 @app.route("/favorites")
 def favorites():
-    return render_template("favorites.html")
+    ratings = get_ratings()
+
+    owner_pics = _get_owner_pics_for_ratings(ratings)
+    reactions_map = _build_reactions_map(ratings)
+    percent_map = _build_percent_map(ratings)
+
+    return render_template(
+        "favorites.html",
+        ratings=ratings,
+        owner_pics=owner_pics,
+        reactions_map=reactions_map,
+        percent_map=percent_map,
+    )
 
 
 @app.route("/playlists")
