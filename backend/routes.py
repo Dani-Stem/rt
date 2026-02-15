@@ -284,6 +284,15 @@ def profile():
 @app.route("/artist-profile")
 def artist_profile():
     return render_template("artist-profile.html")
+@app.route("/artist-profile-expand")
+def artist_profile_expand():
+    return render_template("artist-profile-expand.html")
+@app.route("/album-profile")
+def album_profile():
+    return render_template("album-profile.html")
+@app.route("/song-profile")
+def song_profile():
+    return render_template("song-profile.html")
 
 # View profile details
 @app.route("/profile/<int:user_info_key>")
