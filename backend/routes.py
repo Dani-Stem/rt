@@ -283,7 +283,7 @@ def profile():
 
 @app.route("/artist-profile")
 def artist_profile():
-    return artist_profile()
+    return render_template("artist-profile.html")
 
 # View profile details
 @app.route("/profile/<int:user_info_key>")
