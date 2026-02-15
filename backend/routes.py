@@ -282,15 +282,8 @@ def profile():
     return render_template("profile.html", comments=display_comments)
 
 @app.route("/artist-profile")
-def artist_profile_detail(user_info_key):
-    user_id = get_user_by_id(user_info_key)
-    if not user_id:
-        return redirect("/browse")
-
-    return render_template(
-        "profile.html",
-        user_info_key=user_info_key,
-    )
+def artist_profile():
+    return artist_profile()
 
 # View profile details
 @app.route("/profile/<int:user_info_key>")
