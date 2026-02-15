@@ -2,83 +2,60 @@
 block content_main_class %}gradient-container{% endblock %} {% block
 content_main %}
 {% with messages = get_flashed_messages(with_categories=true) %} {% if messages
-%} {% for category, message in messages %} {% if category == 'artist-profile' %}
+%} {% for category, message in messages %} {% if category == 'album-profile' %}
 
 {% endif %} {% endfor %} {% endif %} {% endwith %}
-  <div class="profile-card about-section">
-    <ul>
-    <li>
-    <h1>Album pic</h1>
-    <h1>avg</h1>
-    </li>
-    <li>
-    <h1>Album Name</h1>
-    <p>up votes</p>
-    </li>
-    </ul>
-  </div>
-
-  <div class="profile-card about-section">
-      <span class="profile-label">Genre</span>
-      <br/>
-      <span class="profile-value-about">rnb rap new age</span>
-      <br/>
-      <span class="profile-label">Release Date</span>
-      <br/>
-      <span class="profile-value-about">jan 1 2026</span>
-  </div>
-
-
-  <div class="profile-card about-section">
-      <span class="profile-label">Top Songs</span>
-      <br/>
-      <ul>
-      <li>
-      <span class="profile-value-about">album title</span>
-      <span class="profile-value-about">album title</span>
-      <span class="profile-value-about">album title</span>
-      </li>
-      </ul>
-  </div>
-
-   <div class="profile-card about-section">
-      <span class="profile-label">avg-rating-lyric</span>
-      <br/>
-      <span class="profile-value-about">100%</span>
-      <br/>
-      <span class="profile-label">top-comment-lyric</span>
-      <br/>
-      <span class="profile-value-about">adfshk aksefakfjh sdfgdkf skdgfdsf sfjkdf zsdfkh fhf fhdfdh  dhlh</span>
-  </div>
-
-  <div class="profile-card about-section">
-      <span class="profile-label">avg-rating-beat</span>
-      <br/>
-      <span class="profile-value-about">100%</span>
-      <br/>
-      <span class="profile-label">top-comment-lyric</span>
-      <br/>
-      <span class="profile-value-about">adfshk aksefakfjh sdfgdkf skdgfdsf sfjkdf zsdfkh fhf fhdfdh  dhlh</span>
-  </div>
-
-  <div class="profile-card about-section">
-      <span class="profile-label">avg-rating-flow</span>
-      <br/>
-      <span class="profile-value-about">100%</span>
-      <br/>
-      <span class="profile-label">top-comment-lyric</span>
-      <br/>
-      <span class="profile-value-about">adfshk aksefakfjh sdfgdkf skdgfdsf sfjkdf zsdfkh fhf fhdfdh  dhlh</span>
-  </div>
-
-  <div class="profile-card about-section">
-      <span class="profile-label">avg-rating-cohesive</span>
-      <br/>
-      <span class="profile-value-about">100%</span>
-      <br/>
-      <span class="profile-label">top-comment-lyric</span>
-      <br/>
-      <span class="profile-value-about">adfshk aksefakfjh sdfgdkf skdgfdsf sfjkdf zsdfkh fhf fhdfdh  dhlh</span>
-  </div>
+  
+          <p class="title_search">New Albums</p>
+          <ul>
+            <li>
+                <ul>
+                <li>
+                <h2>album pic</h2>
+                </li>
+                <li>
+                album
+                </li>
+                </ul>
+                <p>raitng</p>
+                <a href="/album-profile-expand">></a>
+            </li>
+            <li>
+                <ul>
+                <li>
+                <h2>album pic</h2>
+                </li>
+                <li>
+                album
+                </li>
+                </ul>
+                <p>raitng</p>
+                <a href="/album-profile-expand">></a>
+            </li>
+            <li>
+                <ul>
+                <li>
+                <h2>album pic</h2>
+                </li>
+                <li>
+                album
+                </li>
+                </ul>
+                <p>raitng</p>
+                <a href="/album-profile-expand">></a>
+            </li>
+            <li>
+                <ul>
+                <li>
+                <h2>album pic</h2>
+                </li>
+                <li>
+                album
+                </li>
+                </ul>
+                <p>raitng</p>
+                <a href="/album-profile-expand">></a>
+            </li>
+          </ul>
 
 {% endblock %}
