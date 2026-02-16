@@ -23,6 +23,7 @@ from backend.database import (
     get_user_by_username_or_email,
     verify_password,
     get_rating_owner,
+    get_artist,
     update_profile_pic,
     update_profile_info,
     get_profile_pic_by_username,
@@ -284,6 +285,7 @@ def profile():
 @app.route("/artist-profile")
 def artist_profile():
     return render_template("artist-profile.html")
+
 
 @app.route("/artist-profile-expand")
 def artist_profile_expand():

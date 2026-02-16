@@ -21,6 +21,19 @@ def get_ratings():
     return rows
 
 
+# Get all artist
+def get_artist():
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT artist_key INTEGER PRIMARY KEY AUTOINCREMENT, artist_name, last_release, genre_key, tag_key, album_key, track_list_key, avg_rating_lyrics, top_com_lyrics_key, avg_rating_beat, top_com_beat_key, avg_rating_df, top_com_df_key, avg_rating_melody, top_com_melody_key, avg_rating_cohesive, top_com_cohesive_key, avg_rating_emoji, avg_rating_emoji_2, avg_rating_emoji_3, uploaded_by, upvotes, downvotes,favorites_key, picture, avg_rating  user FROM artist ORDER BY artist_key ASC"
+    )
+    rows = cur.fetchall()
+    conn.close()
+    return rows
+
+
+
 # Get a rating by key
 def get_rating_by_key(rating_key):
     conn = get_db_connection()
