@@ -191,7 +191,6 @@ def logout():
     logout_user()
     return redirect("/")
 
-
 # View rating details
 @app.route("/rating/<int:rating_key>")
 def rating_detail(rating_key):
@@ -306,6 +305,15 @@ def song_profile():
 @app.route("/song-profile-expand")
 def song_profile_expand():
     return render_template("song-profile-expand.html")
+
+@app.route("/user-profile")
+def user_profile():
+    return render_template("user-profile.html")
+
+@app.route("/user-profile-expand")
+def user_profile_expand():
+    return render_template("user-profile-expand.html")
+
 
 # View profile details
 @app.route("/profile/<int:user_info_key>")
