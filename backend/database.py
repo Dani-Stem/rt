@@ -21,6 +21,18 @@ def get_ratings():
     return rows
 
 
+# Get all users
+def get_users():
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute(
+        "SELECT user_info_key, username, email, password, first_name, last_name, reviews, likes_key, bulletin_key, upvotes, downvotes, cred, followers_key, following_key, profile_pic, about, favorites0, favorites1, favorites2, favorites3 FROM user_info ORDER BY user_info_key ASC"
+    )
+    rows = cur.fetchall()
+    conn.close()
+    return rows
+
+
 # Get all artist
 def get_artist():
     conn = get_db_connection()

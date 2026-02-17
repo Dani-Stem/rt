@@ -19,6 +19,7 @@ from backend.database import (
     update_rating,
     delete_rating,
     create_user,
+    get_users,
     get_user_by_id,
     get_user_by_username_or_email,
     verify_password,
@@ -308,7 +309,12 @@ def song_profile_expand():
 
 @app.route("/user-profile")
 def user_profile():
-    return render_template("user-profile.html")
+    users = get_users()
+
+    return render_template(
+        "user-profile.html",
+        users=users,
+    )
 
 @app.route("/user-profile-expand")
 def user_profile_expand():
