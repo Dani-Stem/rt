@@ -2,19 +2,55 @@
 block content_main_class %}gradient-container{% endblock %} {% block
 content_main %}
 {% with messages = get_flashed_messages(with_categories=true) %} {% if messages
-%} {% for category, message in messages %} {% if category == 'user-profile' %}
+%} {% for category, message in messages %} {% if category == 'artist-profile' %}
 
 {% endif %} {% endfor %} {% endif %} {% endwith %}
   
         <p class="title_search">New Users</p>
-        
-        <ul class="rating-list">
-            {% for users in users %}
-        <li> 
-        <small class="rating-owner">{{ user_info.username }}</small>
-        </li>
-                 
-            {% endfor %}
-        </ul>
-
+          <ul>
+            <li>
+                <ul>
+                <li>
+                <h2>user pic <br/> username
+                </h2>
+                </li>
+                </ul>
+                <p>main <br/> Geners</p>
+                <p>raitng <br/> emoji</p>
+                <a href="/profile">></a>
+            </li>
+            <li>
+                <ul>
+                <li>
+                <h2>user pic <br/> username
+                </h2>
+                </li>
+                </ul>
+                <p>main <br/> Geners</p>
+                <p>raitng <br/> emoji</p>
+                <a href="/profile">></a>
+            </li>
+            <li>
+                <ul>
+                <li>
+                <h2>user pic <br/> username
+                </h2>
+                </li>
+                </ul>
+                <p>main <br/> Geners</p>
+                <p>raitng <br/> emoji</p>
+                <a href="/profile">></a>
+            </li>
+            <li>
+                <ul>
+                <li>
+                <h2>user pic <br/> username
+                </h2>
+                </li>
+                </ul>
+                <p>main <br/> Geners</p>
+                <p>raitng <br/> emoji</p>
+                <a href="/profile">></a>
+            </li>
+          </ul>
 {% endblock %}
