@@ -1,0 +1,67 @@
+{% extends "base.html" %} {% block title %}{{ title }} - RealTop{% endblock %}
+{% block content_main_class %}gradient-container{% endblock %} {% block
+content_main %}
+<div class="page-head">
+  <p class="title_search">{{ title }}</p>
+</div>
+
+<div class="activity-tabs">
+  <a
+    class="activity-tab {% if active_tab == 'ratings' %}is-active{% endif %}"
+    href="/user/{{ profile_user.username }}/ratings{% if pagination %}?per_page={{ pagination.per_page }}{% endif %}"
+  >
+    Ratings
+  </a>
+  <a
+    class="activity-tab {% if active_tab == 'playlists' %}is-active{% endif %}"
+    href="/user/{{ profile_user.username }}/playlists{% if pagination %}?per_page={{ pagination.per_page }}{% endif %}"
+  >
+    Playlists
+  </a>
+  <a
+    class="activity-tab {% if active_tab == 'favorites' %}is-active{% endif %}"
+    href="/user/{{ profile_user.username }}/favorites{% if pagination %}?per_page={{ pagination.per_page }}{% endif %}"
+  >
+    Favorites
+  </a>
+</div>
+
+<div class="profile-card" style="margin-top: 12px">
+  {% if active_tab in ['ratings', 'favorites'] %} {% set rows = ratings if
+  active_tab == 'ratings' else favorites %} {% if rows %}
+  <ul class="rating-list">
+    {% for rating in rows %}
+    <li onclick="window.location='/rating/{{ rating[0] }}'">
+      {% set pct = percent_map.get(rating[0]) if percent_map else None %} {% if
+      pct %}
+      <span class="rating-percent" aria-hidden="true">{{ pct }}%</span>
+      {% endif %}
+      <span class="rating-item-text">
+        <strong>{{ rating[1] }}</strong>: {{ rating[2] }}<br />
+        <small>
+          Lyrics: {{ rating[3] }} | Beat: {{ rating[4] }} | Flow: {{ rating[5]
+          }} | Melody: {{ rating[6] }} | Cohesive: {{ rating[7] }}
+        </small>
+      </span>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <span class="profile-value-about">{{ empty_text }}</span>
+  {% endif %} {% endif %} {% if active_tab == 'playlists' %} {% if playlists %}
+  <ul class="rating-list">
+    {% for pl in playlists %}
+    <li onclick="window.location='/playlists/{{ pl[0] }}'">
+      <span class="rating-item-text">
+        <strong>{{ pl[2] }}</strong>
+        {% if pl[3] %} : {{ pl[3] }} {% endif %}
+      </span>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <span class="profile-value-about">{{ empty_text }}</span>
+  {% endif %} {% endif %}
+</div>
+
+{% include "_pagination.html" %} {% endblock %}

@@ -1,331 +1,451 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <title>{% block title %}RealTop{% endblock %}</title>
-    <link rel="stylesheet" href="/static/style.css" />
-  </head>
 
-  <body>
-    <div class="container">
-      <div class="header">
-        <p>
-          <a href="/">REALTOP</a>
-        </p>
-        <navbar>
-          <input
-            class="nav-toggle"
-            type="checkbox"
-            id="nav-toggle"
-            aria-label="Toggle navigation"
-          />
-          <label class="nav-toggle-label" for="nav-toggle">
-            <span></span>
-            <span></span>
-            <span></span>
-          </label>
-          <div class="nav-panel">
-            <div class="nav-links">
-              <a href="/" class="btn-nav">HOME</a>
-              <a href="/browse" class="btn-nav">BROWSE</a>
-              <a href="/favorites" class="btn-nav">FAVORITES</a>
-              <a href="/playlists" class="btn-nav">PLAYLISTS</a>
-              <a href="/charts" class="btn-nav">CHARTS</a>
-              <a href="/genres" class="btn-nav">GENRES</a>
-              <a href="/artist-profile" class="btn-nav">ARTISTS</a>
-              <a href="/album-profile" class="btn-nav">ALBUMS</a>
-              <a href="/song-profile" class="btn-nav">SONGS</a>
-              <a href="/user-profile" class="btn-nav">USERS</a>
-            </div>
+<head>
+  <meta charset="UTF-8" />
+  <title>{% block title %}RealTop{% endblock %}</title>
+  <script>
+    (() => {
+      const savedTheme = localStorage.getItem('realtop-theme');
+      const prefersDark =
+        window.matchMedia &&
+        window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const theme = savedTheme || (prefersDark ? 'dark' : 'light');
+      document.documentElement.dataset.theme = theme;
+    })();
+  </script>
+  <link rel="stylesheet" href="/static/style.css?v=5" />
+</head>
 
-            <form class="nav-search" action="/browse" method="get">
-              <input
-                class="nav-search-input"
-                type="search"
-                name="q"
-                placeholder="Search..."
-                aria-label="Search"
-              />
-            </form>
+<body>
+  <div class="container">
+    <div class="header">
+      <p>
+        <a href="/">REALTOP</a>
+      </p>
+      <navbar>
+        <input class="nav-toggle" type="checkbox" id="nav-toggle" aria-label="Toggle navigation" />
+        <label class="nav-toggle-label" for="nav-toggle">
+          <span></span>
+          <span></span>
+          <span></span>
+        </label>
+        <div class="nav-panel">
+          <div class="nav-links">
+            <a href="/" class="btn-nav">HOME</a>
+            <a href="/browse" class="btn-nav">BROWSE</a>
+            <a href="/favorites" class="btn-nav">FAVORITES</a>
+            <a href="/playlists" class="btn-nav">PLAYLISTS</a>
+            <a href="/charts" class="btn-nav">CHARTS</a>
           </div>
-        </navbar>
-      </div>
 
-      <div class="menu-wrap">
-        <div
-          class="menu{% if current_user.is_authenticated %} is-auth{% endif %}"
-        >
-          <div
-            class="signup-container{% if current_user.is_authenticated %} is-auth{% endif %}"
-          >
-            <p class="title_login">
-              {% if current_user.is_authenticated %}
-              <span class="user-summary">
-                <span class="login-avatar">
-                  {% if current_user.profile_pic %}
-                  <img
-                    class="avatar"
-                    src="{{ current_user.profile_pic }}"
-                    alt="Avatar"
-                  />
-                  {% else %}
-                  <span class="avatar-initial"
-                    >{{ current_user.username[0]|upper }}</span
-                  >
-                  {% endif %}
-                </span>
-                <span class="user-name">{{ current_user.username }}</span>
-              </span>
-              {% else %} {% if login %}
-              <span class="title_text">CREATE AN ACCOUNT</span>
-              {% else %}
-              <span class="title_text">LOGIN</span>
-              {% endif %} {% endif %}
-            </p>
+          <div class="nav-actions">
+            <button type="button" class="btn-nav btn-icon nav-theme-toggle" id="theme-toggle"
+              aria-label="Toggle dark mode" aria-pressed="false" title="Toggle theme">
+              <svg class="theme-icon icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                aria-hidden="true">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79Z" />
+              </svg>
+              <svg class="theme-icon icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                aria-hidden="true">
+                <circle cx="12" cy="12" r="4" />
+                <path d="M12 2v2" />
+                <path d="M12 20v2" />
+                <path d="M4.93 4.93l1.41 1.41" />
+                <path d="M17.66 17.66l1.41 1.41" />
+                <path d="M2 12h2" />
+                <path d="M20 12h2" />
+                <path d="M6.34 17.66l-1.41 1.41" />
+                <path d="M19.07 4.93l-1.41 1.41" />
+              </svg>
+            </button>
 
-            {% with messages = get_flashed_messages(with_categories=true) %} {%
-            set filtered = messages | selectattr(0, 'ne', 'profile') | list %}
-            {% if filtered %}
-            <div
-              style="
-                background: #1f2937;
-                border: 1px solid #374151;
-                color: #f87171;
-                padding: 10px 12px;
-                border-radius: 8px;
-                margin-bottom: 16px;
-              "
-            >
-              {% for category, message in filtered %}
-              <div>{{ message }}</div>
-              {% endfor %}
-            </div>
-            {% endif %} {% endwith %} {% if current_user.is_authenticated %}
-            <a href="" class="btn-primary">INVITE</a>
-            {% if request.path != '/profile' %}
-            <a href="/profile" class="btn-primary">VIEW PROFILE</a>
-            {% else %}
-            <a href="/profile-edit" class="btn-primary">EDIT PROFILE</a>
-            {% endif %}
-            <a href="/logout" class="btn-primary btn-secondary">LOG OUT</a>
-            {% else %} {% if login %}
-            <form action="/signup" method="post" class="signup-form">
-              <input type="hidden" name="next" value="{{ next or '' }}" />
-              <div class="form-group">
-                <label for="username">Username:</label>
-                <input type="text" id="username" name="username" required />
-              </div>
-
-              <div class="form-group">
-                <label for="email">Email:</label>
-                <input type="email" id="email" name="email" required />
-              </div>
-
-              <div class="form-group">
-                <label for="password">Password:</label>
-                <input type="password" id="password" name="password" required />
-              </div>
-
-              <div class="form-group">
-                <label for="confirm_password">Confirm Password:</label>
-                <input
-                  type="password"
-                  id="confirm_password"
-                  name="confirm_password"
-                  required
-                />
-              </div>
-
-              <button type="submit" class="btn-primary">Sign Up</button>
-
-              <p class="form-footer">
-                Already have an account? <a href="/auth/login">Log in</a>
-              </p>
+            <form class="nav-search" action="/search" method="get">
+              <input class="nav-search-input" type="search" name="q" placeholder="Search..." aria-label="Search"
+                value="{{ request.args.get('q', '') }}" />
             </form>
-            {% else %}
-            <form action="/login" method="post" class="signup-form">
-              <input type="hidden" name="next" value="{{ next or '' }}" />
-              <div class="form-group">
-                <label for="username">USERNAME OR EMAIL:</label>
-                <input type="text" id="username" name="username" required />
-              </div>
-
-              <div class="form-group">
-                <label for="password">PASSWORD:</label>
-                <input type="password" id="password" name="password" required />
-              </div>
-
-              <button type="submit" class="btn-primary">LOG IN</button>
-
-              <p class="form-footer">
-                DONT HAVE AN ACCOUNT? <a href="/auth/signup">SIGN UP</a>
-              </p>
-            </form>
-            {% endif %} {% endif %}
           </div>
         </div>
-        {% if current_user.is_authenticated %}
-        <input class="modal-toggle" id="bulletin-add-toggle" type="checkbox" />
-        <div class="bulletin-card">
+      </navbar>
+    </div>
+
+    <div class="menu-wrap">
+      <div class="menu{% if current_user.is_authenticated %} is-auth{% endif %}">
+        <div class="signup-container{% if current_user.is_authenticated %} is-auth{% endif %}">
+          <p class="title_login">
+            {% if current_user.is_authenticated %}
+            <span class="user-summary">
+              <span class="login-avatar">
+                {% if current_user.profile_pic %}
+                <img class="avatar" src="{{ current_user.profile_pic }}" alt="Avatar" />
+                {% else %}
+                <span class="avatar-initial">{{ current_user.username[0]|upper }}</span>
+                {% endif %}
+              </span>
+              <span class="user-name">{{ current_user.username }}</span>
+            </span>
+            {% else %} {% if login %}
+            <span class="title_text">CREATE AN ACCOUNT</span>
+            {% else %}
+            <span class="title_text">LOGIN</span>
+            {% endif %} {% endif %}
+          </p>
+
+          {% if current_user.is_authenticated %}
+          <a href="" class="btn-primary">INVITE</a>
+          {% if request.path != '/profile' %}
+          <a href="/profile" class="btn-primary">VIEW PROFILE</a>
+          {% else %}
+          <a href="/profile-edit" class="btn-primary">EDIT PROFILE</a>
+          {% endif %}
+          <a href="/logout" class="btn-primary btn-secondary">LOG OUT</a>
+          {% else %} {% if login %}
+          <form action="/signup" method="post" class="signup-form">
+            <input type="hidden" name="next" value="{{ next or '' }}" />
+            <div class="form-group">
+              <label for="username">Username:</label>
+              <input type="text" id="username" name="username" required />
+            </div>
+
+            <div class="form-group">
+              <label for="email">Email:</label>
+              <input type="email" id="email" name="email" required />
+            </div>
+
+            <div class="form-group">
+              <label for="password">Password:</label>
+              <input type="password" id="password" name="password" required />
+            </div>
+
+            <div class="form-group">
+              <label for="confirm_password">Confirm Password:</label>
+              <input type="password" id="confirm_password" name="confirm_password" required />
+            </div>
+
+            <button type="submit" class="btn-primary">Sign Up</button>
+
+            <p class="form-footer">
+              Already have an account? <a href="/auth/login">Log in</a>
+            </p>
+          </form>
+          {% else %}
+          <form action="/login" method="post" class="signup-form">
+            <input type="hidden" name="next" value="{{ next or '' }}" />
+            <div class="form-group">
+              <label for="username">USERNAME OR EMAIL:</label>
+              <input type="text" id="username" name="username" required />
+            </div>
+
+            <div class="form-group">
+              <label for="password">PASSWORD:</label>
+              <input type="password" id="password" name="password" required />
+            </div>
+
+            <button type="submit" class="btn-primary">LOG IN</button>
+
+            <p class="form-footer">
+              DONT HAVE AN ACCOUNT? <a href="/auth/signup">SIGN UP</a>
+            </p>
+          </form>
+          {% endif %} {% endif %}
+        </div>
+      </div>
+      {% if current_user.is_authenticated %}
+      <input class="modal-toggle" id="bulletin-add-toggle" type="checkbox" />
+      <div class="bulletin-card">
+        <div class="bulletin-header">
           <p class="title_search">BULLETIN</p>
-          <label class="btn-nav modal-trigger" for="bulletin-add-toggle">
+          {% if bulletin_count %}
+          <span class="sidebar-count sidebar-count-corner" aria-label="{{ bulletin_count }} bulletin posts">
+            {{ bulletin_count }}
+          </span>
+          {% endif %}
+          <label class="btn-nav modal-trigger bulletin-add" for="bulletin-add-toggle">
             ADD
           </label>
-          <input class="sidebar-toggle" id="bulletin-toggle" type="checkbox" />
-          <div class="sidebar-collapsible">
+        </div>
+        <div class="sidebar-collapsible sidebar-static">
+          <ul class="sidebar-list">
+            {% for post in bulletins[:5] %}
+            <li class="sidebar-item">
+              <div class="bulletin-summary bulletin-link" role="link" tabindex="0"
+                onclick="window.location='/bulletin/{{ post.bulletin_key }}'"
+                onkeydown="if (event.key === 'Enter') { window.location='/bulletin/{{ post.bulletin_key }}'; }">
+                {% set t = (post.type or 'praise')|lower|trim %} {% set
+                flair_map = { 'poll': 'flair-poll', 'praise': 'flair-praise',
+                'critique': 'flair-critique', 'show & tell':
+                'flair-show-tell', 'rating highlight':
+                'flair-rating-highlight', 'rating challenge':
+                'flair-rating-challenge' } %} {% set flair = flair_map.get(t,
+                'flair-praise') %}
+                <span class="bulletin-summary-left">
+                  <span class="bulletin-type {{ flair }}">{{ t }}</span>
+                  <span class="bulletin-by">@{{ post.created_by }}</span>
+                </span>
+
+                <span class="bulletin-summary-right">
+                  {% if post.time_ago %}
+                  <span class="sidebar-meta">{{ post.time_ago }}</span>
+                  {% endif %} {% if current_user.is_authenticated and
+                  post.created_by_user_id == current_user.id %}
+                  <form method="post" action="/bulletin/{{ post.bulletin_key }}/delete" class="bulletin-delete-form"
+                    onsubmit="
+                        event.preventDefault();
+                        event.stopPropagation();
+                        if (confirm('Delete this post?')) {
+                          this.submit();
+                        }
+                      ">
+                    <input type="hidden" name="next" value="{{ request.path }}" />
+                    <button type="submit" class="bulletin-delete" aria-label="Delete bulletin post" title="Delete"
+                      onclick="event.stopPropagation()">
+                      ×
+                    </button>
+                  </form>
+                  {% endif %}
+                </span>
+              </div>
+            </li>
+            {% else %}
+            <li class="sidebar-item">No bulletin posts yet.</li>
+            {% endfor %}
+          </ul>
+        </div>
+        <div class="sidebar-viewall-row">
+          <a class="bulletin-viewall" href="/bulletin">View all</a>
+        </div>
+      </div>
+      <div class="modal">
+        <label class="modal-backdrop" for="bulletin-add-toggle"></label>
+        <form class="modal-card" role="dialog" aria-modal="true" method="post" action="/bulletin">
+          <input type="hidden" name="next" value="{{ request.path }}" />
+          <div class="modal-head">
+            <p class="modal-title">Post to Bulletin</p>
+            <label class="modal-close" for="bulletin-add-toggle" aria-label="Close">
+              ×
+            </label>
+          </div>
+          <div class="form-group">
+            <label for="bulletin-type">Type</label>
+            <select id="bulletin-type" name="type" required>
+              <option value="" disabled selected>Select type</option>
+              <option value="poll">poll</option>
+              <option value="praise">praise</option>
+              <option value="critique">critique</option>
+              <option value="show &amp; tell">show &amp; tell</option>
+              <option value="rating highlight">rating highlight</option>
+              <option value="rating challenge">rating challenge</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="bulletin-message">Message</label>
+            <textarea id="bulletin-message" name="message" rows="3" placeholder="Write something..."
+              required></textarea>
+          </div>
+          <div class="modal-actions">
+            <button type="submit" class="btn-nav">Post</button>
+            <label class="btn-nav modal-secondary" for="bulletin-add-toggle">
+              Cancel
+            </label>
+          </div>
+        </form>
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="content">
+      <div class="content_left">
+        {% if current_user.is_authenticated %}
+        <div class="signup-container">
+          <div class="alerts-header">
+            <p class="title_search">ALERTS</p>
+            {% if unread_alert_count %}
+            <span class="alerts-count sidebar-count-corner" aria-label="{{ unread_alert_count }} new alerts">
+              {{ unread_alert_count }}
+            </span>
+            {% endif %}
+          </div>
+          <div class="sidebar-collapsible sidebar-static">
             <ul class="sidebar-list">
-              <li class="sidebar-item">Test</li>
-              <li class="sidebar-item">Test</li>
-              <li class="sidebar-item">Test</li>
-              <li class="sidebar-item">Test</li>
-              <li class="sidebar-item">Test</li>
-              <li class="sidebar-item">Test</li>
-              <li class="sidebar-item">Test</li>
-              <li class="sidebar-item">Test</li>
-              <li class="sidebar-item">Test</li>
-              <li class="sidebar-item">Test</li>
-              <li class="sidebar-item">Test</li>
-              <li class="sidebar-item">Test</li>
-              <li class="sidebar-item">Test</li>
-              <li class="sidebar-item">Test</li>
-              <li class="sidebar-item">Test</li>
-              <li class="sidebar-item">Test</li>
+              {% for alert in alerts[:5] %}
+              <li class="sidebar-item">
+                {% if not alert.is_read %}
+                <span class="alert-dot" aria-hidden="true"></span>
+                {% endif %}
+                <a class="sidebar-link" href="/alerts/{{ alert.alert_id }}/go?next={{ request.path }}">
+                  {% if alert.message %} {% set parts =
+                  alert.message.split(None, 1) %}
+                  <span class="alert-username"><span class="pill-text">{{ parts[0] }}</span></span>{% if parts|length >
+                  1 %} {{ parts[1] }}{% endif %} {%
+                  endif %}
+                </a>
+                <span class="alert-actions">
+                  {% if alert.time_ago %}
+                  <span class="sidebar-meta">{{ alert.time_ago }}</span>
+                  {% endif %}
+                  <form class="alert-delete-form" method="post"
+                    action="/alerts/{{ alert.alert_id }}/delete?next={{ request.full_path }}">
+                    <button type="submit" class="bulletin-delete alert-delete-btn" aria-label="Delete alert"
+                      title="Delete">
+                      ×
+                    </button>
+                  </form>
+                </span>
+              </li>
+              {% else %}
+              <li class="sidebar-item">No alerts yet.</li>
+              {% endfor %}
             </ul>
           </div>
-          <label class="sidebar-toggle-label" for="bulletin-toggle">
-            <span class="show-more">Show more</span>
-            <span class="show-less">Show less</span>
-          </label>
+          {% if alerts %}
+          <div class="sidebar-viewall-row">
+            <a class="alerts-viewall" href="/alerts">View all</a>
+          </div>
+          {% endif %}
         </div>
-        <div class="modal">
-          <label class="modal-backdrop" for="bulletin-add-toggle"></label>
-          <form
-            class="modal-card"
-            role="dialog"
-            aria-modal="true"
-            method="post"
-            action="/bulletin"
-          >
-            <div class="modal-head">
-              <p class="modal-title">Post to Bulletin</p>
-              <label
-                class="modal-close"
-                for="bulletin-add-toggle"
-                aria-label="Close"
-              >
-                ×
-              </label>
-            </div>
-            <div class="form-group">
-              <label for="bulletin-message">Message</label>
-              <textarea
-                id="bulletin-message"
-                name="message"
-                rows="3"
-                placeholder="Write something..."
-                required
-              ></textarea>
-            </div>
-            <div class="modal-actions">
-              <button type="button" class="btn-nav">Post</button>
-              <label class="btn-nav modal-secondary" for="bulletin-add-toggle">
-                Cancel
-              </label>
-            </div>
-          </form>
+        {% endif %} {% if current_user.is_authenticated %}
+        <div class="activity-card">
+          <div class="activity-header">
+            <p class="title_search">ACTIVITY</p>
+            {% if activity_count %}
+            <span class="sidebar-count sidebar-count-corner" aria-label="{{ activity_count }} activity items">
+              {{ activity_count }}
+            </span>
+            {% endif %}
+          </div>
+          <div class="sidebar-collapsible sidebar-static">
+            <ul class="sidebar-list">
+              {% for item in activities[:5] %}
+              <li class="sidebar-item activity-item{% if item.action %} action-{{ item.action }}{% endif %}">
+                {% if item.url %}
+                <a class="sidebar-link" href="{{ item.url }}">
+                  {% if item.text %} {% set tokens = item.text.split(' ') %}
+                  {% for tok in tokens %} {% if loop.index0 > 0 %} {% endif %}
+                  {% if tok.startswith('@') %}
+                  <span class="alert-username{% if not loop.first %} is-secondary{% endif %}"><span class="pill-text">{{
+                      tok }}</span></span>
+                  {% else %} {% if loop.index0 == 1 %}
+                  <span class="activity-verb">{{ tok }}</span>
+                  {% else %} {{ tok }} {% endif %} {% endif %} {% endfor %} {% endif %}
+                </a>
+                {% else %} {% if item.text %} {% set tokens =
+                item.text.split(' ') %} {% for tok in tokens %} {% if
+                loop.index0 > 0 %} {% endif %} {% if tok.startswith('@') %}
+                <span class="alert-username{% if not loop.first %} is-secondary{% endif %}"><span class="pill-text">{{
+                    tok }}</span></span>
+                {% else %} {% if loop.index0 == 1 %}
+                <span class="activity-verb">{{ tok }}</span>
+                {% else %} {{ tok }} {% endif %} {% endif %} {% endfor %} {% endif %} {%
+                endif %}
+              </li>
+              {% else %}
+              <li class="sidebar-item">No activity yet.</li>
+              {% endfor %}
+            </ul>
+          </div>
+          <div class="sidebar-viewall-row">
+            <a class="activity-viewall" href="/activity">View all</a>
+          </div>
         </div>
         {% endif %}
       </div>
 
-      <div class="content">
-        <div class="content_left">
-          {% if current_user.is_authenticated %}
-          <div class="signup-container">
-            <p class="title_search">ALERTS</p>
-            <input class="sidebar-toggle" id="alerts-toggle" type="checkbox" />
-            <div class="sidebar-collapsible">
-              <ul class="sidebar-list">
-                <li class="sidebar-item">Test</li>
-                <li class="sidebar-item">Test</li>
-                <li class="sidebar-item">Test</li>
-                <li class="sidebar-item">Test</li>
-                <li class="sidebar-item">Test</li>
-                <li class="sidebar-item">Test</li>
-                <li class="sidebar-item">Test</li>
-                <li class="sidebar-item">Test</li>
-                <li class="sidebar-item">Test</li>
-                <li class="sidebar-item">Test</li>
-                <li class="sidebar-item">Test</li>
-                <li class="sidebar-item">Test</li>
-                <li class="sidebar-item">Test</li>
-                <li class="sidebar-item">Test</li>
-                <li class="sidebar-item">Test</li>
-                <li class="sidebar-item">Test</li>
-              </ul>
-            </div>
-            <label class="sidebar-toggle-label" for="alerts-toggle">
-              <span class="show-more">Show more</span>
-              <span class="show-less">Show less</span>
-            </label>
-          </div>
-          {% endif %}
-          <div class="activity-card">
-            <p class="title_search">ACTIVITY</p>
-            <input
-              class="sidebar-toggle"
-              id="activity-toggle"
-              type="checkbox"
-            />
-            <div class="sidebar-collapsible">
-              <ul class="sidebar-list">
-                <li class="sidebar-item">You rated: Test</li>
-                <li class="sidebar-item">Edited: Test</li>
-                <li class="sidebar-item">Deleted: Test</li>
-                <li class="sidebar-item">New reaction on: Test</li>
-                <li class="sidebar-item">New rating: Test</li>
-                <li class="sidebar-item">Invite sent to: Test</li>
-                <li class="sidebar-item">Profile updated</li>
-                <li class="sidebar-item">Test: Test</li>
-                <li class="sidebar-item">You rated: Test</li>
-                <li class="sidebar-item">Edited: Test</li>
-                <li class="sidebar-item">Deleted: Test</li>
-                <li class="sidebar-item">New reaction on: Test</li>
-                <li class="sidebar-item">New rating: Test</li>
-                <li class="sidebar-item">Invite sent to: Test</li>
-                <li class="sidebar-item">Profile updated</li>
-                <li class="sidebar-item">Test: Test</li>
-                <li class="sidebar-item">You rated: Test</li>
-                <li class="sidebar-item">Edited: Test</li>
-                <li class="sidebar-item">Deleted: Test</li>
-                <li class="sidebar-item">New reaction on: Test</li>
-                <li class="sidebar-item">New rating: Test</li>
-                <li class="sidebar-item">Invite sent to: Test</li>
-                <li class="sidebar-item">Profile updated</li>
-                <li class="sidebar-item">Test: Test</li>
-              </ul>
-            </div>
-            <label class="sidebar-toggle-label" for="activity-toggle">
-              <span class="show-more">Show more</span>
-              <span class="show-less">Show less</span>
-            </label>
-          </div>
+      <div class="content_main {% block content_main_class %}{% endblock %}">
+        {% with messages = get_flashed_messages(with_categories=true) %} {%
+        set filtered = messages | selectattr(0, 'ne', 'profile') | list %} {%
+        if filtered %}
+        <div class="flash-messages" role="status" aria-live="polite">
+          {% for category, message in filtered %}
+          <div class="flash-message {{ category|e }}">{{ message }}</div>
+          {% endfor %}
         </div>
-
-        <div class="content_main {% block content_main_class %}{% endblock %}">
-          {% block content_main %}{% endblock %}
-        </div>
+        {% endif %} {% endwith %} {% block content_main %}{% endblock %}
       </div>
     </div>
-    <script>
-      const textareas = document.querySelectorAll("textarea");
-      const autoResize = (el) => {
-        el.style.height = "auto";
-        el.style.height = `${el.scrollHeight}px`;
-      };
-      textareas.forEach((el) => {
-        autoResize(el);
-        el.addEventListener("input", () => autoResize(el));
+  </div>
+  <script>
+    const applyTheme = (theme) => {
+      document.documentElement.dataset.theme = theme;
+      const btn = document.getElementById('theme-toggle');
+      if (btn) {
+        btn.setAttribute('aria-pressed', theme === 'dark' ? 'true' : 'false');
+        btn.setAttribute(
+          'aria-label',
+          theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode',
+        );
+      }
+    };
+
+    const themeToggle = document.getElementById('theme-toggle');
+    if (themeToggle) {
+      applyTheme(document.documentElement.dataset.theme || 'light');
+      themeToggle.addEventListener('click', () => {
+        const current = document.documentElement.dataset.theme || 'light';
+        const next = current === 'dark' ? 'light' : 'dark';
+        localStorage.setItem('realtop-theme', next);
+        applyTheme(next);
       });
-    </script>
-  </body>
+    }
+
+    const textareas = document.querySelectorAll('textarea');
+    const autoResize = (el) => {
+      el.style.height = 'auto';
+      el.style.height = `${el.scrollHeight}px`;
+    };
+    textareas.forEach((el) => {
+      autoResize(el);
+      el.addEventListener('input', () => autoResize(el));
+    });
+
+    const updateUsernamePills = () => {
+      const pills = document.querySelectorAll('.alert-username');
+      pills.forEach((pill) => {
+        const inner = pill.querySelector('.pill-text');
+        if (!inner) return;
+
+        pill.classList.remove('is-marquee');
+        pill.style.removeProperty('--marquee-distance');
+        pill.style.removeProperty('--marquee-duration');
+
+        const available = pill.clientWidth;
+        const needed = inner.scrollWidth;
+        if (!available || needed <= available + 1) return;
+
+        const distance = Math.max(needed - available + 8, 0);
+        const duration = Math.min(Math.max(distance / 30, 2.8), 12);
+
+        pill.classList.add('is-marquee');
+        pill.style.setProperty('--marquee-distance', `${distance}px`);
+        pill.style.setProperty('--marquee-duration', `${duration}s`);
+      });
+    };
+
+    const scheduleUsernamePillsUpdate = (() => {
+      let t = null;
+      return () => {
+        if (t) window.clearTimeout(t);
+        t = window.setTimeout(() => {
+          window.requestAnimationFrame(updateUsernamePills);
+        }, 60);
+      };
+    })();
+
+    window.addEventListener('resize', scheduleUsernamePillsUpdate);
+    window.addEventListener('load', scheduleUsernamePillsUpdate);
+    scheduleUsernamePillsUpdate();
+
+
+    window.addEventListener('pageshow', (e) => {
+      const navEntry = performance.getEntriesByType?.('navigation')?.[0];
+      const isBackForward =
+        e.persisted || (navEntry && navEntry.type === 'back_forward');
+      if (isBackForward) {
+        window.location.reload();
+      }
+    });
+  </script>
+</body>
+
 </html>

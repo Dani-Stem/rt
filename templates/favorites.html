@@ -1,54 +1,206 @@
-{% extends "base.html" %}
-{% block title %}Favorites - RealTop{% endblock %}
-{% block content_main_class %}gradient-container{% endblock %}
-{% block content_main %}
-          <p class="title_search">Favorites</p>
+{% extends "base.html" %} {% block title %}Favorites - RealTop{% endblock %} {%
+block content_main_class %}ratings-container{% endblock %} {% block content_main
+%}
+<div class="page-head">
+  <p class="title_search">Favorites</p>
+</div>
 
-          <form action="/profile-edit" method="post" class="edit-profile-form">
-    <div class="profile-card profile-info profile-edit-card">
-      <div class="profile-edit-field">
-      <ul>
-        <li>
-        <span class="profile-value-favorites">{{ current_user.favorites0 }}
-        <a href="/artist-profile">lil 2 Dow</a></span>
-        <button
-          type="submit"
-          aria-label="Remove profile picture"
-        >
-          <span class="btn-remove-icon">×</span>
-        </button>
-        </li>
-        <li>
-        <span class="profile-value-favorites">{{ current_user.favorites1 }}</span>
-        <button
-          type="submit"
-          aria-label="Remove profile picture"
-        >
-          <span class="btn-remove-icon">×</span>
-        </button>
-        </li>
-        <li>
-        <span class="profile-value-favorites">{{ current_user.favorites2 }}</span>
-        <button
-          type="submit"
-          aria-label="Remove profile picture"
-        >
-        <span class="btn-remove-icon">×</span>
-        </button>
-        </li>
-        <li>
-        <span class="profile-value-favorites">{{ current_user.favorites3 }}</span>
-        <button
-          type="submit"
-          aria-label="Remove profile picture"
-        >
-        <span class="btn-remove-icon">×</span>
-        </button>
-        </li>
-      </ul>
+{% if not current_user.is_authenticated %}
+<p class="auth-hint" style="color: #6b7280; font-style: italic">
+  Log in to see favorites.
+</p>
+{% else %}
+
+<div class="activity-tabs" style="margin-top: 0">
+  <a
+    class="activity-tab {% if not active_tab or active_tab == 'ratings' %}is-active{% endif %}"
+    href="/favorites?tab=ratings{% if pagination %}&per_page={{ pagination.per_page }}{% endif %}"
+    >Ratings</a
+  >
+  <a
+    class="activity-tab {% if active_tab == 'playlists' %}is-active{% endif %}"
+    href="/favorites?tab=playlists{% if pagination %}&per_page={{ pagination.per_page }}{% endif %}"
+    >Playlists</a
+  >
+  <a
+    class="activity-tab {% if active_tab == 'upvoted' %}is-active{% endif %}"
+    href="/favorites?tab=upvoted{% if pagination %}&per_page={{ pagination.per_page }}{% endif %}"
+    >Upvoted</a
+  >
+</div>
+
+{% if not active_tab or active_tab == 'ratings' or active_tab == 'upvoted' %}
+<div class="profile-card" style="margin-top: 12px">
+  <div class="card-head">
+    <span class="card-head-left">
+      <span class="profile-label"
+        >{% if active_tab == 'upvoted' %}Upvoted{% else %}Ratings{% endif
+        %}</span
+      >
+    </span>
+    <span
+      class="rating-count"
+      aria-label="{% if active_tab == 'upvoted' %}Upvoted ratings on this page{% else %}Liked ratings on this page{% endif %}"
+      >{{ ratings|length }}</span
+    >
+  </div>
+
+  {% if ratings %}
+  <ul class="rating-list">
+    {% for rating in ratings %}
+    <li
+      onclick="window.location='/rating/{{ rating[0] }}'"
+      class="{% if current_user.is_authenticated and rating[8] == current_user.username %}is-owner{% endif %}"
+    >
+      {% set pct = percent_map.get(rating[0]) if percent_map else None %} {% if
+      pct %}
+      <span class="rating-percent" aria-hidden="true">{{ pct }}%</span>
+      {% endif %} {% set owner_username = rating[8] %}
+
+      <div class="rating-item-left">
+        <span class="rating-header">
+          <span class="avatar-wrap">
+            {% if owner_pics and owner_username in owner_pics and
+            owner_pics[owner_username] %}
+            <img
+              class="avatar"
+              src="{{ owner_pics[owner_username] }}"
+              alt="{{ owner_username }} avatar"
+            />
+            {% else %}
+            <span class="avatar-initial">{{ owner_username[0]|upper }}</span>
+            {% endif %}
+          </span>
+          <small class="rating-owner">{{ owner_username }}</small>
+        </span>
+
+        <span class="rating-item-text">
+          <strong>{{ rating[1] }}</strong>: {{ rating[2] }}<br />
+          <small>
+            {% if active_tab == 'upvoted' %} {% set cats =
+            upvoted_categories_map.get(rating[0], []) if upvoted_categories_map
+            else [] %} Upvoted: {% if cats %}{{ cats|join(', ') }}{% else %}—{%
+            endif %} {% if cats %}
+            <br />
+            {% for cat in cats[:2] %} {% if cat == 'Lyrics' %}
+            <span
+              ><b>Lyrics ({{ rating[3] }}):</b> {{ (rating[9] or 'No reason
+              provided.')|truncate(90, True, '…') }}</span
+            >
+            {% elif cat == 'Beat' %}
+            <span
+              ><b>Beat ({{ rating[4] }}):</b> {{ (rating[10] or 'No reason
+              provided.')|truncate(90, True, '…') }}</span
+            >
+            {% elif cat == 'Flow' %}
+            <span
+              ><b>Flow ({{ rating[5] }}):</b> {{ (rating[11] or 'No reason
+              provided.')|truncate(90, True, '…') }}</span
+            >
+            {% elif cat == 'Melody' %}
+            <span
+              ><b>Melody ({{ rating[6] }}):</b> {{ (rating[12] or 'No reason
+              provided.')|truncate(90, True, '…') }}</span
+            >
+            {% elif cat == 'Cohesive' %}
+            <span
+              ><b>Cohesive ({{ rating[7] }}):</b> {{ (rating[13] or 'No reason
+              provided.')|truncate(90, True, '…') }}</span
+            >
+            {% else %}
+            <span><b>{{ cat }}:</b> Preview unavailable.</span>
+            {% endif %} {% if not loop.last %}<br />{% endif %} {% endfor %} {%
+            if cats|length > 2 %}
+            <br />
+            <span style="opacity: 0.75">+{{ cats|length - 2 }} more</span>
+            {% endif %} {% endif %} {% else %} Lyrics: {{ rating[3] }} | Beat:
+            {{ rating[4] }} | Flow: {{ rating[5] }} | Melody: {{ rating[6] }} |
+            Cohesive: {{ rating[7] }} {% endif %}
+          </small>
+
+          {% set reactions = reactions_map.get(rating[0]) if reactions_map else
+          [] %} {% if reactions %}
+          <span class="rating-reactions" aria-hidden="true">
+            {% for emoji in reactions %}
+            <span class="rating-emoji">{{ emoji }}</span>
+            {% endfor %}
+          </span>
+          {% endif %}
+        </span>
       </div>
-    </div>
 
-  </form>
-        
-{% endblock %}
+      <span class="rating-item-actions" onclick="event.stopPropagation()">
+        {% if current_user.is_authenticated and rating[8] ==
+        current_user.username %}
+        <span class="rating-action-group">
+          <a
+            href="/edit/{{ rating[0] }}"
+            class="rating-action rating-action-edit"
+            onclick="event.stopPropagation()"
+            >Edit</a
+          >
+          <form
+            action="/delete/{{ rating[0] }}"
+            method="post"
+            style="display: inline"
+          >
+            <button
+              type="submit"
+              class="rating-action rating-action-delete"
+              onclick="
+                event.stopPropagation();
+                return confirm('Are you sure you want to delete this rating?');
+              "
+            >
+              ×
+            </button>
+          </form>
+        </span>
+        {% endif %}
+      </span>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="auth-hint" style="color: #6b7280; font-style: italic">
+    {% if active_tab == 'upvoted' %}No upvoted ratings yet.{% else %}No liked
+    ratings yet.{% endif %}
+  </p>
+  {% endif %} {% include "_pagination.html" %}
+</div>
+
+{% else %}
+
+<div class="profile-card" style="margin-top: 12px">
+  <div class="card-head">
+    <span class="card-head-left">
+      <span class="profile-label">Playlists</span>
+    </span>
+    <span class="rating-count" aria-label="Favorited playlists on this page"
+      >{{ playlists|length }}</span
+    >
+  </div>
+
+  {% if playlists %}
+  <ul class="rating-list">
+    {% for pl in playlists %}
+    <li onclick="window.location='/playlists/{{ pl[0] }}'">
+      <span class="rating-item-text">
+        <strong>{{ pl[2] }}</strong>
+        {% if pl[3] %} : {{ pl[3] }} {% endif %}
+        <br />
+        <small>
+          by <a class="btn-nav pill-action playlist-user-pill" href="/user/{{ pl[1] }}">@{{ pl[1] }}</a>
+        </small>
+      </span>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="auth-hint" style="color: #6b7280; font-style: italic">
+    No favorited playlists yet.
+  </p>
+  {% endif %} {% include "_pagination.html" %}
+</div>
+
+{% endif %} {% endif %} {% endblock %}

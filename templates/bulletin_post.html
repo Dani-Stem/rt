@@ -1,0 +1,55 @@
+{% extends "base.html" %} {% block title %}Bulletin - RealTop{% endblock %} {%
+block content_main_class %}gradient-container{% endblock %} {% block
+content_main %}
+<div class="page-head">
+  <p class="title_search">Bulletin</p>
+</div>
+
+<div class="profile-card" style="margin-top: 12px">
+  {% set t = (post.type or 'praise')|lower %} {% set flair_map = { 'poll':
+  'flair-poll', 'praise': 'flair-praise', 'critique': 'flair-critique', 'show &
+  tell': 'flair-show-tell', 'rating highlight': 'flair-rating-highlight',
+  'rating challenge': 'flair-rating-challenge' } %} {% set flair =
+  flair_map.get(t, 'flair-praise') %}
+
+  <div class="bulletin-summary" style="margin-bottom: 0.4rem">
+    <span class="bulletin-summary-left">
+      <span class="bulletin-type {{ flair }}">{{ t }}</span>
+      <span class="bulletin-by">@{{ post.created_by }}</span>
+    </span>
+
+    <span class="bulletin-summary-right">
+      {% if post.time_ago %}
+      <span class="sidebar-meta">{{ post.time_ago }}</span>
+      {% endif %} {% if current_user.is_authenticated and
+      post.created_by_user_id == current_user.id %}
+      <form
+        method="post"
+        action="/bulletin/{{ post.bulletin_key }}/delete"
+        class="bulletin-delete-form"
+        onsubmit="
+          event.preventDefault();
+          if (confirm('Delete this post?')) {
+            this.submit();
+          }
+        "
+      >
+        <input type="hidden" name="next" value="/bulletin" />
+        <button
+          type="submit"
+          class="bulletin-delete"
+          aria-label="Delete bulletin post"
+          title="Delete"
+        >
+          ×
+        </button>
+      </form>
+      {% endif %}
+    </span>
+  </div>
+
+  <div class="bulletin-message">
+    <strong>@{{ post.created_by }}</strong>: {{ post.message }}
+  </div>
+</div>
+{% endblock %}

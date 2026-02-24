@@ -1,0 +1,96 @@
+{% extends "base.html" %} {% block title %}Activity - RealTop{% endblock %} {%
+block content_main_class %}gradient-container{% endblock %} {% block
+content_main %}
+<div class="page-head">
+  <p class="title_search">Activity</p>
+  <div class="page-head-right">
+    {% if total_count %}
+    <form
+      method="post"
+      action="/activity/clear"
+      class="activity-clear-form"
+      onsubmit="
+        if (!confirm('Clear all activity?')) {
+          event.preventDefault();
+        }
+      "
+    >
+      <input type="hidden" name="tab" value="{{ active_tab }}" />
+      <input type="hidden" name="next" value="{{ request.full_path }}" />
+      <button type="submit" class="activity-viewall">Clear all</button>
+    </form>
+    <span class="sidebar-count" aria-label="{{ total_count }} activity items">
+      {{ total_count }}
+    </span>
+    {% endif %}
+  </div>
+</div>
+
+<div class="activity-tabs">
+  {% for tab in tabs %}
+  <a
+    class="activity-tab {% if tab.key == active_tab %}is-active{% endif %}"
+    href="/activity?tab={{ tab.key }}{% if pagination %}&per_page={{ pagination.per_page }}{% endif %}"
+  >
+    {{ tab.label }}
+  </a>
+  {% endfor %}
+</div>
+
+<ul class="sidebar-list activity-list">
+  {% for item in items %}
+  <li
+    class="sidebar-item activity-item{% if item.action %} action-{{ item.action }}{% endif %}"
+  >
+    {% if item.url %}
+    <a class="sidebar-link" href="{{ item.url }}">
+      {% if item.text %} {% set tokens = item.text.split(' ') %} {% for tok in
+      tokens %} {% if loop.index0 > 0 %} {% endif %} {% if tok.startswith('@')
+      %}
+      <span
+        class="alert-username{% if not loop.first %} is-secondary{% endif %}"
+        ><span class="pill-text">{{ tok }}</span></span
+      >
+      {% else %} {% if loop.index0 == 1 %}
+      <span class="activity-verb">{{ tok }}</span>
+      {% else %} {{ tok }} {% endif %} {% endif %} {% endfor %} {% endif %}
+    </a>
+    {% else %} {% if item.text %} {% set tokens = item.text.split(' ') %} {% for
+    tok in tokens %} {% if loop.index0 > 0 %} {% endif %} {% if
+    tok.startswith('@') %}
+    <span class="alert-username{% if not loop.first %} is-secondary{% endif %}"
+      ><span class="pill-text">{{ tok }}</span></span
+    >
+    {% else %} {% if loop.index0 == 1 %}
+    <span class="activity-verb">{{ tok }}</span>
+    {% else %} {{ tok }} {% endif %} {% endif %} {% endfor %} {% endif %} {% endif %} {% if
+    item.time_ago %}
+    <span class="sidebar-meta">{{ item.time_ago }}</span>
+    {% endif %} {% if item.activity_id %}
+    <form
+      method="post"
+      action="/activity/{{ item.activity_id }}/dismiss"
+      class="activity-delete-form"
+      onsubmit="
+        if (!confirm('Remove this activity item?')) {
+          event.preventDefault();
+        }
+      "
+    >
+      <input type="hidden" name="next" value="{{ request.full_path }}" />
+      <button
+        type="submit"
+        class="activity-delete"
+        aria-label="Remove activity item"
+        title="Remove"
+      >
+        ×
+      </button>
+    </form>
+    {% endif %}
+  </li>
+  {% else %}
+  <li class="sidebar-item">No activity yet.</li>
+  {% endfor %}
+</ul>
+{% include "_pagination.html" %} {% endblock %}

@@ -15,6 +15,14 @@ def get_db_connection():
 def init_db():
     conn = get_db_connection()
     cur = conn.cursor()
+
+    def _ensure_column(table_name: str, column_name: str, column_def: str) -> None:
+        cur.execute(f"PRAGMA table_info({table_name})")
+        existing = {row[1] for row in cur.fetchall()}
+        if column_name in existing:
+            return
+        cur.execute(f"ALTER TABLE {table_name} ADD COLUMN {column_def}")
+
     cur.execute(
         """
        CREATE TABLE IF NOT EXISTS "ratings" (
@@ -42,6 +50,8 @@ def init_db():
         )
         """
     )
+
+    _ensure_column("ratings", "image_url", "image_url TEXT")
     cur.execute(
         """
         CREATE TABLE IF NOT EXISTS "album" (
@@ -107,6 +117,10 @@ def init_db():
         )
         """
     )
+
+    _ensure_column("bulletin", "created_by_user_id", "created_by_user_id INTEGER")
+    _ensure_column("bulletin", "message", "message TEXT")
+    _ensure_column("bulletin", "created_at", "created_at TEXT")
     cur.execute(
         """
         CREATE TABLE IF NOT EXISTS challenges (
@@ -142,6 +156,69 @@ def init_db():
         )
         """
     )
+
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS rating_likes (
+        rating_like_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        rating_key INTEGER NOT NULL,
+        user_id INTEGER NOT NULL,
+        created_at TEXT,
+        UNIQUE(rating_key, user_id)
+        )
+        """
+    )
+
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS rating_category_votes (
+        rating_key INTEGER NOT NULL,
+        user_id INTEGER NOT NULL,
+        category TEXT NOT NULL,
+        vote INTEGER NOT NULL,
+        updated_at TEXT,
+        PRIMARY KEY (rating_key, user_id, category)
+        )
+        """
+    )
+
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS rating_comments (
+        comment_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        rating_key INTEGER NOT NULL,
+        author_user_id INTEGER NOT NULL,
+        message VARCHAR(500),
+        created_at TEXT
+        )
+        """
+    )
+
+    cur.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_rating_comments_rating
+        ON rating_comments (rating_key)
+        """
+    )
+
+    cur.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_rating_category_votes_rating
+        ON rating_category_votes (rating_key)
+        """
+    )
+
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS playlist_likes (
+        playlist_like_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        playlist_key INTEGER NOT NULL,
+        user_id INTEGER NOT NULL,
+        created_at TEXT,
+        UNIQUE(playlist_key, user_id)
+        )
+        """
+    )
     cur.execute(
         """
         CREATE TABLE IF NOT EXISTS playlist_info (
@@ -162,6 +239,14 @@ def init_db():
         created_by VARCHAR(50),
         song_key INTEGER
         )
+        """
+    )
+
+    _ensure_column("playlist_songs", "playlist_key", "playlist_key INTEGER")
+    cur.execute(
+        """
+        CREATE UNIQUE INDEX IF NOT EXISTS idx_playlist_songs_unique
+        ON playlist_songs (playlist_key, song_key)
         """
     )
     cur.execute(
@@ -192,6 +277,9 @@ def init_db():
         )
         """
     )
+
+    _ensure_column("song", "artist_link", "artist_link TEXT")
+    _ensure_column("song", "song_link", "song_link TEXT")
     cur.execute(
         """
         CREATE TABLE IF NOT EXISTS user_info (
@@ -222,6 +310,59 @@ def init_db():
         author_user_id INTEGER,
         message VARCHAR(500),
         created_at TEXT
+        )
+        """
+    )
+
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS alerts (
+        alert_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        message TEXT NOT NULL,
+        url TEXT,
+        created_at TEXT,
+        is_read INTEGER DEFAULT 0
+        )
+        """
+    )
+
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS activity (
+        activity_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        actor_user_id INTEGER NOT NULL,
+        actor_username TEXT NOT NULL,
+        action TEXT NOT NULL,
+        category TEXT,
+        entity_type TEXT,
+        entity_id INTEGER,
+        entity_label TEXT,
+        url TEXT,
+        created_at TEXT,
+        metadata TEXT
+        )
+        """
+    )
+
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS activity_dismissed (
+        user_id INTEGER NOT NULL,
+        activity_id INTEGER NOT NULL,
+        dismissed_at TEXT,
+        PRIMARY KEY (user_id, activity_id)
+        )
+        """
+    )
+
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS activity_clear (
+        user_id INTEGER NOT NULL,
+        category TEXT NOT NULL,
+        cleared_at TEXT NOT NULL,
+        PRIMARY KEY (user_id, category)
         )
         """
     )

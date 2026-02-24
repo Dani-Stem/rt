@@ -1,0 +1,122 @@
+{% extends "base.html" %} {% block title %}Search - RealTop{% endblock %} {%
+block content_main_class %}ratings-container{% endblock %} {% block content_main
+%}
+<div class="page-head">
+  <p class="title_search">Search</p>
+</div>
+
+<div class="profile-stack">
+  {% if not query %}
+  <div class="profile-card">
+    <span class="profile-value-about">Type in the search bar.</span>
+  </div>
+  {% else %}
+  <div class="activity-tabs" style="margin-bottom: 12px">
+    {% for tab in tabs %}
+    <a
+      class="activity-tab {% if tab.key == active_tab %}is-active{% endif %}"
+      href="/search?q={{ query }}&tab={{ tab.key }}{% if pagination %}&per_page={{ pagination.per_page }}{% endif %}"
+    >
+      {{ tab.label }}
+    </a>
+    {% endfor %}
+  </div>
+
+  {% if active_tab in ['all', 'users'] %}
+  <div class="profile-card">
+    <div class="profile-label">Users</div>
+    {% if users %}
+    <ul class="follow-list">
+      {% for user in users %}
+      <li class="follow-item">
+        <a class="follow-user-link" href="/user/{{ user.username }}">
+          {% if user.profile_pic %}
+          <img class="avatar" src="{{ user.profile_pic }}" alt="Avatar" />
+          {% else %}
+          <span class="avatar-initial">{{ user.username[0]|upper }}</span>
+          {% endif %}
+          <span class="follow-username">@{{ user.username }}</span>
+        </a>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <span class="profile-value-about">No users found.</span>
+    {% endif %}
+  </div>
+  {% endif %} {% if active_tab in ['all', 'playlists'] %}
+  <div class="profile-card">
+    <div class="profile-label">Playlists</div>
+    {% if playlists %}
+    <ul class="rating-list">
+      {% for pl in playlists %}
+      <li onclick="window.location='/playlists/{{ pl[0] }}'">
+        <span class="rating-item-text">
+          <strong>{{ pl[2] }}</strong>
+          {% if pl[3] %} : {{ pl[3] }} {% endif %}
+          <br />
+          <small>
+            by <a class="btn-nav pill-action playlist-user-pill" href="/user/{{ pl[1] }}">@{{ pl[1] }}</a>
+          </small>
+        </span>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <span class="profile-value-about">No playlists found.</span>
+    {% endif %}
+  </div>
+  {% endif %} {% if active_tab in ['all', 'ratings'] %}
+  <div class="profile-card">
+    <div class="profile-label">Ratings</div>
+    {% if ratings %}
+    <ul class="rating-list">
+      {% for rating in ratings %}
+      <li onclick="window.location='/rating/{{ rating[0] }}'">
+        {% set pct = percent_map.get(rating[0]) if percent_map else None %} {%
+        if pct %}
+        <span class="rating-percent" aria-hidden="true">{{ pct }}%</span>
+        {% endif %} {% set owner_username = rating[8] %}
+
+        <div class="rating-item-left">
+          <span class="rating-header">
+            <span class="avatar-wrap">
+              {% if owner_pics and owner_username in owner_pics and
+              owner_pics[owner_username] %}
+              <img
+                class="avatar"
+                src="{{ owner_pics[owner_username] }}"
+                alt="{{ owner_username }} avatar"
+              />
+              {% else %}
+              <span class="avatar-initial">{{ owner_username[0]|upper }}</span>
+              {% endif %}
+            </span>
+            <small class="rating-owner">{{ owner_username }}</small>
+          </span>
+          <span class="rating-item-text">
+            <strong>{{ rating[1] }}</strong>: {{ rating[2] }}<br />
+            <small>
+              Lyrics: {{ rating[3] }} | Beat: {{ rating[4] }} | Flow: {{
+              rating[5] }} | Melody: {{ rating[6] }} | Cohesive: {{ rating[7] }}
+            </small>
+            {% set reactions = reactions_map.get(rating[0]) if reactions_map
+            else [] %} {% if reactions %}
+            <span class="rating-reactions" aria-hidden="true">
+              {% for emoji in reactions %}
+              <span class="rating-emoji">{{ emoji }}</span>
+              {% endfor %}
+            </span>
+            {% endif %}
+          </span>
+        </div>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <span class="profile-value-about">No ratings found.</span>
+    {% endif %}
+  </div>
+  {% endif %} {% include "_pagination.html" %} {% endif %}
+</div>
+{% endblock %}

@@ -1,31 +1,71 @@
 {% extends "base.html" %} {% block title %}Rating Details - RealTop{% endblock
-%} {% block content_main_class %}ratings-container{% endblock %} {% block
+%} {% block content_main_class %}gradient-container{% endblock %} {% block
 content_main %}
 <div class="page-head rating-detail-head">
   <p class="title_search">Rating Details</p>
   <span class="rating-percent">{{ percent }}%</span>
 </div>
 
+{% if rating_image_url %}
+<div class="rating-hero">
+  <img
+    class="rating-hero-img"
+    src="{{ rating_image_url }}"
+    alt="{{ rating[2] }} cover"
+    loading="lazy"
+  />
+</div>
+{% endif %}
+
+<div class="profile-card rating-detail-card">
 <div class="rating-alt">
   <section class="rating-summary">
-    <div class="summary-main">
-      <div style="display: flex; align-items: center; gap: 8px">
-        {% if owner %}
-        <span class="avatar-wrap"  onclick="window.location='/profile/{{ rating[9] }}'">
-          {% if owner_pic %}
-          <img class="avatar" src="{{ owner_pic }}" alt="{{ owner }} avatar" />
-          {% else %}
-          <span class="avatar-initial">{{ owner[0]|upper }}</span>
+    <div class="rating-summary-top">
+      <div class="summary-main">
+        <div style="display: flex; align-items: center; gap: 8px">
+          {% if owner %}
+          <a class="avatar-wrap" href="/user/{{ owner }}">
+            {% if owner_pic %}
+            <img
+              class="avatar"
+              src="{{ owner_pic }}"
+              alt="{{ owner }} avatar"
+            />
+            {% else %}
+            <span class="avatar-initial">{{ owner[0]|upper }}</span>
+            {% endif %}
+          </a>
           {% endif %}
-        </span>
-        {% endif %}
-        <div>
-          <h2 class="title" style="margin: 0">
-            {{ rating[1] }}
-            <span class="divider">•</span>
-            <span class="subject">{{ rating[2] }}</span>
-          </h2>
+          <div>
+            <h2 class="title" style="margin: 0">
+              {{ rating[1] }}
+              <span class="divider">•</span>
+              <span class="subject">{{ rating[2] }}</span>
+            </h2>
+            {% if owner %}
+            <a class="rating-owner link-plain" href="/user/{{ owner }}">
+              @{{ owner }}
+            </a>
+            {% endif %}
+          </div>
         </div>
+      </div>
+
+      <div class="rating-like-row">
+        <form method="POST" action="/rating/{{ rating[0] }}/like">
+          <button
+            type="submit"
+            class="heart-btn {% if liked %}is-liked{% endif %}"
+            aria-label="{% if liked %}Unlike rating{% else %}Like rating{% endif %}"
+            title="{% if liked %}Unlike{% else %}Like{% endif %}"
+          >
+            {% if liked %}
+            <span class="heart-icon" aria-hidden="true">♥</span>
+            {% else %}
+            <span class="heart-icon" aria-hidden="true">♡</span>
+            {% endif %}
+          </button>
+        </form>
       </div>
     </div>
     <div class="summary-pills">
@@ -41,77 +81,362 @@ content_main %}
     <div class="detail-item">
       <div class="detail-head">
         <h3>Lyrics</h3>
-        <span class="detail-score">{{ rating[3] }}</span>
+        <div class="detail-right">
+          <span class="detail-score">{{ rating[3] }}</span>
+        </div>
       </div>
       <p class="reason">{{ rating[4] or 'No reason provided.' }}</p>
-      {% set reactions = detail_reactions.get('Lyrics') if detail_reactions else
-      [] %} {% if reactions %}
-      <div class="rating-reactions rating-reactions-bottom" aria-hidden="true">
-        {% for emoji in reactions %}
-        <span class="rating-emoji">{{ emoji }}</span>
-        {% endfor %}
+      <div class="detail-footer">
+        <div class="detail-vote-row">
+          <form
+            class="category-vote"
+            method="POST"
+            action="/rating/{{ rating[0] }}/category-vote"
+          >
+            <input type="hidden" name="category" value="Lyrics" />
+            <button
+              type="submit"
+              name="direction"
+              value="up"
+              class="cat-vote-btn is-up {% if user_category_votes.get('Lyrics', 0) == 1 %}is-active{% endif %}"
+              aria-label="Upvote Lyrics"
+              title="Upvote"
+              {%
+              if
+              not
+              can_category_vote
+              %}disabled{%
+              endif
+              %}
+            >
+              ▲
+            </button>
+            <span
+              class="cat-vote-score {% if user_category_votes.get('Lyrics', 0) == 1 %}is-up{% elif user_category_votes.get('Lyrics', 0) == -1 %}is-down{% endif %}"
+              aria-label="Lyrics vote score"
+            >
+              {{ category_vote_summary.get('Lyrics', {}).get('score', 0) }}
+            </span>
+            <button
+              type="submit"
+              name="direction"
+              value="down"
+              class="cat-vote-btn is-down {% if user_category_votes.get('Lyrics', 0) == -1 %}is-active{% endif %}"
+              aria-label="Downvote Lyrics"
+              title="Downvote"
+              {%
+              if
+              not
+              can_category_vote
+              %}disabled{%
+              endif
+              %}
+            >
+              ▼
+            </button>
+          </form>
+        </div>
+
+        {% set reactions = detail_reactions.get('Lyrics') if detail_reactions
+        else [] %} {% if reactions %}
+        <div
+          class="rating-reactions rating-reactions-bottom"
+          aria-hidden="true"
+        >
+          {% for emoji in reactions %}
+          <span class="rating-emoji">{{ emoji }}</span>
+          {% endfor %}
+        </div>
+        {% endif %}
       </div>
-      {% endif %}
     </div>
     <div class="detail-item">
       <div class="detail-head">
         <h3>Beat</h3>
-        <span class="detail-score">{{ rating[5] }}</span>
+        <div class="detail-right">
+          <span class="detail-score">{{ rating[5] }}</span>
+        </div>
       </div>
       <p class="reason">{{ rating[6] or 'No reason provided.' }}</p>
-      {% set reactions = detail_reactions.get('Beat') if detail_reactions else
-      [] %} {% if reactions %}
-      <div class="rating-reactions rating-reactions-bottom" aria-hidden="true">
-        {% for emoji in reactions %}
-        <span class="rating-emoji">{{ emoji }}</span>
-        {% endfor %}
+      <div class="detail-footer">
+        <div class="detail-vote-row">
+          <form
+            class="category-vote"
+            method="POST"
+            action="/rating/{{ rating[0] }}/category-vote"
+          >
+            <input type="hidden" name="category" value="Beat" />
+            <button
+              type="submit"
+              name="direction"
+              value="up"
+              class="cat-vote-btn is-up {% if user_category_votes.get('Beat', 0) == 1 %}is-active{% endif %}"
+              aria-label="Upvote Beat"
+              title="Upvote"
+              {%
+              if
+              not
+              can_category_vote
+              %}disabled{%
+              endif
+              %}
+            >
+              ▲
+            </button>
+            <span
+              class="cat-vote-score {% if user_category_votes.get('Beat', 0) == 1 %}is-up{% elif user_category_votes.get('Beat', 0) == -1 %}is-down{% endif %}"
+              aria-label="Beat vote score"
+            >
+              {{ category_vote_summary.get('Beat', {}).get('score', 0) }}
+            </span>
+            <button
+              type="submit"
+              name="direction"
+              value="down"
+              class="cat-vote-btn is-down {% if user_category_votes.get('Beat', 0) == -1 %}is-active{% endif %}"
+              aria-label="Downvote Beat"
+              title="Downvote"
+              {%
+              if
+              not
+              can_category_vote
+              %}disabled{%
+              endif
+              %}
+            >
+              ▼
+            </button>
+          </form>
+        </div>
+
+        {% set reactions = detail_reactions.get('Beat') if detail_reactions else
+        [] %} {% if reactions %}
+        <div
+          class="rating-reactions rating-reactions-bottom"
+          aria-hidden="true"
+        >
+          {% for emoji in reactions %}
+          <span class="rating-emoji">{{ emoji }}</span>
+          {% endfor %}
+        </div>
+        {% endif %}
       </div>
-      {% endif %}
     </div>
     <div class="detail-item">
       <div class="detail-head">
         <h3>Flow</h3>
-        <span class="detail-score">{{ rating[7] }}</span>
+        <div class="detail-right">
+          <span class="detail-score">{{ rating[7] }}</span>
+        </div>
       </div>
       <p class="reason">{{ rating[8] or 'No reason provided.' }}</p>
-      {% set reactions = detail_reactions.get('Flow') if detail_reactions else
-      [] %} {% if reactions %}
-      <div class="rating-reactions rating-reactions-bottom" aria-hidden="true">
-        {% for emoji in reactions %}
-        <span class="rating-emoji">{{ emoji }}</span>
-        {% endfor %}
+      <div class="detail-footer">
+        <div class="detail-vote-row">
+          <form
+            class="category-vote"
+            method="POST"
+            action="/rating/{{ rating[0] }}/category-vote"
+          >
+            <input type="hidden" name="category" value="Flow" />
+            <button
+              type="submit"
+              name="direction"
+              value="up"
+              class="cat-vote-btn is-up {% if user_category_votes.get('Flow', 0) == 1 %}is-active{% endif %}"
+              aria-label="Upvote Flow"
+              title="Upvote"
+              {%
+              if
+              not
+              can_category_vote
+              %}disabled{%
+              endif
+              %}
+            >
+              ▲
+            </button>
+            <span
+              class="cat-vote-score {% if user_category_votes.get('Flow', 0) == 1 %}is-up{% elif user_category_votes.get('Flow', 0) == -1 %}is-down{% endif %}"
+              aria-label="Flow vote score"
+            >
+              {{ category_vote_summary.get('Flow', {}).get('score', 0) }}
+            </span>
+            <button
+              type="submit"
+              name="direction"
+              value="down"
+              class="cat-vote-btn is-down {% if user_category_votes.get('Flow', 0) == -1 %}is-active{% endif %}"
+              aria-label="Downvote Flow"
+              title="Downvote"
+              {%
+              if
+              not
+              can_category_vote
+              %}disabled{%
+              endif
+              %}
+            >
+              ▼
+            </button>
+          </form>
+        </div>
+
+        {% set reactions = detail_reactions.get('Flow') if detail_reactions else
+        [] %} {% if reactions %}
+        <div
+          class="rating-reactions rating-reactions-bottom"
+          aria-hidden="true"
+        >
+          {% for emoji in reactions %}
+          <span class="rating-emoji">{{ emoji }}</span>
+          {% endfor %}
+        </div>
+        {% endif %}
       </div>
-      {% endif %}
     </div>
     <div class="detail-item">
       <div class="detail-head">
         <h3>Melody</h3>
-        <span class="detail-score">{{ rating[9] }}</span>
+        <div class="detail-right">
+          <span class="detail-score">{{ rating[9] }}</span>
+        </div>
       </div>
       <p class="reason">{{ rating[10] or 'No reason provided.' }}</p>
-      {% set reactions = detail_reactions.get('Melody') if detail_reactions else
-      [] %} {% if reactions %}
-      <div class="rating-reactions rating-reactions-bottom" aria-hidden="true">
-        {% for emoji in reactions %}
-        <span class="rating-emoji">{{ emoji }}</span>
-        {% endfor %}
+      <div class="detail-footer">
+        <div class="detail-vote-row">
+          <form
+            class="category-vote"
+            method="POST"
+            action="/rating/{{ rating[0] }}/category-vote"
+          >
+            <input type="hidden" name="category" value="Melody" />
+            <button
+              type="submit"
+              name="direction"
+              value="up"
+              class="cat-vote-btn is-up {% if user_category_votes.get('Melody', 0) == 1 %}is-active{% endif %}"
+              aria-label="Upvote Melody"
+              title="Upvote"
+              {%
+              if
+              not
+              can_category_vote
+              %}disabled{%
+              endif
+              %}
+            >
+              ▲
+            </button>
+            <span
+              class="cat-vote-score {% if user_category_votes.get('Melody', 0) == 1 %}is-up{% elif user_category_votes.get('Melody', 0) == -1 %}is-down{% endif %}"
+              aria-label="Melody vote score"
+            >
+              {{ category_vote_summary.get('Melody', {}).get('score', 0) }}
+            </span>
+            <button
+              type="submit"
+              name="direction"
+              value="down"
+              class="cat-vote-btn is-down {% if user_category_votes.get('Melody', 0) == -1 %}is-active{% endif %}"
+              aria-label="Downvote Melody"
+              title="Downvote"
+              {%
+              if
+              not
+              can_category_vote
+              %}disabled{%
+              endif
+              %}
+            >
+              ▼
+            </button>
+          </form>
+        </div>
+
+        {% set reactions = detail_reactions.get('Melody') if detail_reactions
+        else [] %} {% if reactions %}
+        <div
+          class="rating-reactions rating-reactions-bottom"
+          aria-hidden="true"
+        >
+          {% for emoji in reactions %}
+          <span class="rating-emoji">{{ emoji }}</span>
+          {% endfor %}
+        </div>
+        {% endif %}
       </div>
-      {% endif %}
     </div>
     <div class="detail-item">
       <div class="detail-head">
         <h3>Cohesive</h3>
-        <span class="detail-score">{{ rating[11] }}</span>
+        <div class="detail-right">
+          <span class="detail-score">{{ rating[11] }}</span>
+        </div>
       </div>
       <p class="reason">{{ rating[12] or 'No reason provided.' }}</p>
-      {% set reactions = detail_reactions.get('Cohesive') if detail_reactions
-      else [] %} {% if reactions %}
-      <div class="rating-reactions rating-reactions-bottom" aria-hidden="true">
-        {% for emoji in reactions %}
-        <span class="rating-emoji">{{ emoji }}</span>
-        {% endfor %}
+      <div class="detail-footer">
+        <div class="detail-vote-row">
+          <form
+            class="category-vote"
+            method="POST"
+            action="/rating/{{ rating[0] }}/category-vote"
+          >
+            <input type="hidden" name="category" value="Cohesive" />
+            <button
+              type="submit"
+              name="direction"
+              value="up"
+              class="cat-vote-btn is-up {% if user_category_votes.get('Cohesive', 0) == 1 %}is-active{% endif %}"
+              aria-label="Upvote Cohesive"
+              title="Upvote"
+              {%
+              if
+              not
+              can_category_vote
+              %}disabled{%
+              endif
+              %}
+            >
+              ▲
+            </button>
+            <span
+              class="cat-vote-score {% if user_category_votes.get('Cohesive', 0) == 1 %}is-up{% elif user_category_votes.get('Cohesive', 0) == -1 %}is-down{% endif %}"
+              aria-label="Cohesive vote score"
+            >
+              {{ category_vote_summary.get('Cohesive', {}).get('score', 0) }}
+            </span>
+            <button
+              type="submit"
+              name="direction"
+              value="down"
+              class="cat-vote-btn is-down {% if user_category_votes.get('Cohesive', 0) == -1 %}is-active{% endif %}"
+              aria-label="Downvote Cohesive"
+              title="Downvote"
+              {%
+              if
+              not
+              can_category_vote
+              %}disabled{%
+              endif
+              %}
+            >
+              ▼
+            </button>
+          </form>
+        </div>
+
+        {% set reactions = detail_reactions.get('Cohesive') if detail_reactions
+        else [] %} {% if reactions %}
+        <div
+          class="rating-reactions rating-reactions-bottom"
+          aria-hidden="true"
+        >
+          {% for emoji in reactions %}
+          <span class="rating-emoji">{{ emoji }}</span>
+          {% endfor %}
+        </div>
+        {% endif %}
       </div>
-      {% endif %}
     </div>
   </section>
 
@@ -120,4 +445,138 @@ content_main %}
     <a href="/browse" class="btn-cancel">← Go to Browse</a>
   </div>
 </div>
+</div>
+
+<div class="rating-comments-spacer" aria-hidden="true"></div>
+
+<div class="profile-card rating-comments-card comments-section" id="comments">
+    <div class="comments-head">
+      <span class="profile-label">Comments:</span>
+    </div>
+
+    {% if comments %}
+    <ul class="comment-list">
+      {% for comment in comments %}
+      <li class="comment-item">
+        {% if current_user.is_authenticated and comment.author_user_id ==
+        current_user.id %}
+        <input
+          class="modal-toggle"
+          id="rating-comment-edit-{{ comment.comment_id }}"
+          type="checkbox"
+        />
+        {% endif %}
+        <div class="comment-content">
+          <a class="comment-avatar-link" href="/user/{{ comment.username }}">
+            {% if comment.profile_pic %}
+            <img class="comment-avatar" src="{{ comment.profile_pic }}" alt="Avatar" />
+            {% else %}
+            <span class="comment-avatar-initial"
+              >{{ comment.username[0]|upper }}</span
+            >
+            {% endif %}
+          </a>
+          <div class="comment-body">
+            <a
+              class="comment-username comment-username-link"
+              href="/user/{{ comment.username }}"
+            >
+              @{{ comment.username }}
+            </a>
+            <span class="comment-text">{{ comment.message }}</span>
+          </div>
+        </div>
+        {% if current_user.is_authenticated and comment.author_user_id ==
+        current_user.id %}
+        <div class="comment-actions">
+          <label
+            class="comment-edit-btn"
+            for="rating-comment-edit-{{ comment.comment_id }}"
+          >
+            Edit
+          </label>
+          <form
+            action="/rating/{{ rating[0] }}/comments/delete/{{ comment.comment_id }}"
+            method="post"
+            class="comment-remove-form"
+          >
+            <button
+              type="submit"
+              class="comment-remove-btn"
+              aria-label="Delete comment"
+            >
+              ×
+            </button>
+          </form>
+        </div>
+        <div class="modal modal-comment-edit">
+          <label
+            class="modal-backdrop"
+            for="rating-comment-edit-{{ comment.comment_id }}"
+          ></label>
+          <form
+            class="modal-card"
+            role="dialog"
+            aria-modal="true"
+            method="post"
+            action="/rating/{{ rating[0] }}/comments/edit/{{ comment.comment_id }}"
+          >
+            <div class="modal-head">
+              <p class="modal-title">Edit Comment</p>
+              <label
+                class="modal-close"
+                for="rating-comment-edit-{{ comment.comment_id }}"
+                aria-label="Close"
+              >
+                ×
+              </label>
+            </div>
+            <div class="form-group">
+              <textarea name="comment" rows="3" required>
+{{ comment.message }}</textarea
+              >
+            </div>
+            <div class="modal-actions">
+              <button type="submit" class="btn-nav">Save</button>
+              <label
+                class="btn-nav modal-secondary"
+                for="rating-comment-edit-{{ comment.comment_id }}"
+              >
+                Cancel
+              </label>
+            </div>
+          </form>
+        </div>
+        {% endif %}
+        <span class="comment-time">{{ comment.time_ago }}</span>
+      </li>
+      {% endfor %}
+    </ul>
+    {% else %}
+    <span class="profile-value-about">No comments yet.</span>
+    {% endif %}
+
+    {% if current_user.is_authenticated %}
+    <form
+      method="POST"
+      action="/rating/{{ rating[0] }}/comments"
+      class="rating-comment-form"
+    >
+      <div class="form-group">
+        <textarea
+          id="comment"
+          name="comment"
+          rows="3"
+          placeholder="Write a comment..."
+          required
+        ></textarea>
+      </div>
+      <div class="modal-actions">
+        <button type="submit" class="btn-nav">Comment</button>
+      </div>
+    </form>
+    {% else %}
+    <p class="profile-value-about">Log in to leave a comment.</p>
+    {% endif %}
+  </div>
 {% endblock %}

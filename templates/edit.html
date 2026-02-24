@@ -7,6 +7,8 @@
           action="{{ form_action or '/edit/' ~ rating[0] }}"
           method="post"
           class="rating-form"
+          enctype="multipart/form-data"
+          novalidate
         >
           <div class="form-field">
             <label for="type">Rating Type</label>
@@ -27,6 +29,28 @@
               value="{{ rating[2] }}"
               required
             />
+          </div>
+
+          <div class="form-field is-file">
+            <label for="rating_image">Image (optional)</label>
+            <p class="auth-hint">Examples: album cover, artist pic, single cover.</p>
+            <input
+              type="file"
+              id="rating_image"
+              name="rating_image"
+              accept="image/png,image/jpeg,image/gif,image/webp"
+            />
+            {% if rating|length > 13 and rating[13] %}
+            <label class="auth-hint" for="remove_rating_image">
+              <input
+                type="checkbox"
+                id="remove_rating_image"
+                name="remove_rating_image"
+                value="1"
+              />
+              Remove current image
+            </label>
+            {% endif %}
           </div>
 
           <div class="rating-block">
