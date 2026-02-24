@@ -27,7 +27,8 @@ content_main %}
       %} {% set flair = flair_map.get(t, 'flair-praise') %}
 
       <span class="bulletin-summary-left">
-        <span class="bulletin-type {{ flair }}">{{ t }}</span>
+        <span class="bulletin-type {{ flair }}">{{ t }}</span>        
+        <span class="bulletin-title">{{ title }}</span>
         <span class="bulletin-by">@{{ post.created_by }}</span>
       </span>
 

@@ -984,6 +984,7 @@ def bulletin():
 
     message = (request.form.get("message") or "").strip()
     post_type = (request.form.get("type") or "").strip().lower()
+    title = (request.form.get("title") or "").strip().lower()
 
     allowed_types = {
         "poll",
@@ -1008,6 +1009,7 @@ def bulletin():
         current_user.id,
         current_user.username,
         message,
+        title,
         post_type=post_type,
     )
     add_activity(
@@ -1019,7 +1021,7 @@ def bulletin():
         entity_id=bulletin_key,
         entity_label=None,
         url=_safe_internal_url(request.referrer, "/"),
-        metadata={"message_length": len(message), "type": post_type},
+        metadata={"message_length": len(message), "title": title, "type": post_type},
     )
 
     next_url = (request.form.get("next") or "").strip()

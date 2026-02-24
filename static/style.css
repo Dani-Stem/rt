@@ -2296,6 +2296,14 @@ html[data-theme='dark'] .sidebar-item+.sidebar-item {
   white-space: nowrap;
 }
 
+.bulletin-title {
+  color: var(--subtle);
+  font-weight: 800;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+
 .bulletin-type {
   --flair-color: var(--brand-2);
   display: inline-flex;
@@ -2359,7 +2367,7 @@ html[data-theme='dark'] .sidebar-item+.sidebar-item {
   opacity: 0.92;
 }
 
-.bulletin-message {
+.bulletin-title {
   margin-top: 0.25rem;
   color: var(--subtle);
 }

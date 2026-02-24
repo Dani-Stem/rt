@@ -155,16 +155,17 @@
       {% if current_user.is_authenticated %}
       <input class="modal-toggle" id="bulletin-add-toggle" type="checkbox" />
       <div class="bulletin-card">
-        <div class="bulletin-header">
-          <p class="title_search">BULLETIN</p>
-          {% if bulletin_count %}
-          <span class="sidebar-count sidebar-count-corner" aria-label="{{ bulletin_count }} bulletin posts">
-            {{ bulletin_count }}
-          </span>
-          {% endif %}
+        <div class="bulletin-header">          
           <label class="btn-nav modal-trigger bulletin-add" for="bulletin-add-toggle">
             ADD
           </label>
+          <p class="title_search">BULLETIN</p>
+          <!-- {% if bulletin_count %}
+          <span class="sidebar-count sidebar-count-corner" aria-label="{{ bulletin_count }} bulletin posts">
+            {{ bulletin_count }}
+          </span>
+          {% endif %} -->
+
         </div>
         <div class="sidebar-collapsible sidebar-static">
           <ul class="sidebar-list">
@@ -238,6 +239,11 @@
               <option value="rating highlight">rating highlight</option>
               <option value="rating challenge">rating challenge</option>
             </select>
+          </div>
+          <div class="form-group">
+            <label for="bulletin-title">Title</label>
+            <textarea id="bulletin-title" name="title" rows="1" placeholder="Write something..."
+              required></textarea>
           </div>
           <div class="form-group">
             <label for="bulletin-message">Message</label>

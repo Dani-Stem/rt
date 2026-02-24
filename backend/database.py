@@ -635,10 +635,12 @@ def add_bulletin_post(
     created_by_user_id: int,
     created_by: str,
     message: str,
+    title: str,
     post_type: str = "praise",
 ):
     created_by = (created_by or "").strip()
     message = (message or "").strip()
+    title = (title or "").strip()
     post_type = (post_type or "").strip()
     if not created_by or not message:
         return
@@ -648,10 +650,10 @@ def add_bulletin_post(
     cur = conn.cursor()
     cur.execute(
         """
-        INSERT INTO bulletin (created_by_user_id, created_by, message, created_at, type)
-        VALUES (?,?,?,?,?)
+        INSERT INTO bulletin (created_by_user_id, created_by, message, created_at, title, type)
+        VALUES (?,?,?,?,?,?)
         """,
-        (int(created_by_user_id), created_by, message, created_at, post_type),
+        (int(created_by_user_id), created_by, message, created_at, title, post_type),
     )
     bulletin_key = cur.lastrowid
     conn.commit()
@@ -670,6 +672,7 @@ def get_bulletin_feed_for_user(user_id: int, limit: int = 15, offset: int = 0):
             message,
             created_at,
             created_by_user_id,
+            title,
             type
         FROM bulletin
         WHERE created_by_user_id = ?
@@ -690,7 +693,7 @@ def get_bulletin_feed_for_user(user_id: int, limit: int = 15, offset: int = 0):
 
     items = []
     for row in rows:
-        bulletin_key, created_by, message, created_at, created_by_user_id, post_type = (
+        bulletin_key, created_by, message, created_at, created_by_user_id, title, post_type = (
             row
         )
         items.append(
@@ -700,6 +703,7 @@ def get_bulletin_feed_for_user(user_id: int, limit: int = 15, offset: int = 0):
                 "message": message,
                 "created_at": created_at,
                 "created_by_user_id": created_by_user_id,
+                "title": title,
                 "type": post_type,
             }
         )
@@ -742,6 +746,7 @@ def get_bulletin_post_for_user(user_id: int, bulletin_key: int) -> Optional[dict
             message,
             created_at,
             created_by_user_id,
+            title,
             type
         FROM bulletin
         WHERE bulletin_key = ?
@@ -769,6 +774,7 @@ def get_bulletin_post_for_user(user_id: int, bulletin_key: int) -> Optional[dict
         message,
         created_at,
         created_by_user_id,
+        title,
         post_type,
     ) = row
     return {
@@ -777,6 +783,7 @@ def get_bulletin_post_for_user(user_id: int, bulletin_key: int) -> Optional[dict
         "message": message,
         "created_at": created_at,
         "created_by_user_id": created_by_user_id,
+        "title": title,
         "type": post_type,
     }
 
