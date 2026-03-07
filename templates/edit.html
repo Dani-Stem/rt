@@ -20,7 +20,8 @@
             </select>
           </div>
 
-          <div class="form-field">
+          {% set _has_type = (rating and rating[1]) %}
+          <div class="form-field" id="name_field" {% if not _has_type %}style="display:none;"{% endif %}>
             <label for="rating_name">Name</label>
             <input
               type="text"
@@ -28,7 +29,12 @@
               name="rating_name"
               value="{{ rating[2] }}"
               required
+              readonly
+              {% if not _has_type %}disabled{% endif %}
             />
+            <input type="hidden" id="mbid" name="mbid" value="{{ rating[13] if rating|length > 13 else '' }}" />
+            <input type="hidden" id="mb_url" name="mb_url" value="{{ rating[14] if rating|length > 14 else '' }}" />
+            <input type="hidden" id="content_artist" name="content_artist" value="{{ rating[15] if rating|length > 15 else '' }}" />
           </div>
 
           <div class="form-field is-file">
@@ -40,7 +46,7 @@
               name="rating_image"
               accept="image/png,image/jpeg,image/gif,image/webp"
             />
-            {% if rating|length > 13 and rating[13] %}
+            {% if rating|length > 0 and rating[-1] %}
             <label class="auth-hint" for="remove_rating_image">
               <input
                 type="checkbox"
@@ -52,6 +58,300 @@
             </label>
             {% endif %}
           </div>
+
+          <input class="modal-toggle" id="mb-modal-toggle" type="checkbox" />
+          <div class="modal">
+            <label class="modal-backdrop" for="mb-modal-toggle" aria-label="Close"></label>
+            <div class="modal-card" role="dialog" aria-modal="true" aria-label="MusicBrainz search">
+              <div class="modal-head">
+                <p class="modal-title"></p>
+                <label class="modal-close" for="mb-modal-toggle" aria-label="Close">×</label>
+              </div>
+
+              <div class="form-group">
+                <label for="mb_q" id="mb_q_label">Search</label>
+                <input id="mb_q" type="text" placeholder="Search..." />
+              </div>
+
+              <div class="form-group" id="mb_artist_group">
+                <label for="mb_artist">Artist (optional)</label>
+                <input id="mb_artist" type="text" placeholder="Type artist name" />
+              </div>
+
+              <div class="modal-actions">
+                <button type="button" class="btn-nav" id="mb_search_btn">Search</button>
+                <label class="btn-nav modal-secondary" for="mb-modal-toggle">Close</label>
+              </div>
+
+              <div id="mb_status" style="margin-top: 10px; color: var(--subtle);"></div>
+              <div id="mb_results" style="margin-top: 10px;"></div>
+            </div>
+          </div>
+
+          <script>
+            (() => {
+              const typeSelect = document.getElementById('type');
+              const nameField = document.getElementById('name_field');
+              const nameInput = document.getElementById('rating_name');
+              const mbidInput = document.getElementById('mbid');
+              const mbUrlInput = document.getElementById('mb_url');
+              const contentArtistInput = document.getElementById('content_artist');
+              const modalToggle = document.getElementById('mb-modal-toggle');
+              const qInput = document.getElementById('mb_q');
+              const qLabel = document.getElementById('mb_q_label');
+              const artistInput = document.getElementById('mb_artist');
+              const artistGroup = document.getElementById('mb_artist_group');
+              const btn = document.getElementById('mb_search_btn');
+              const status = document.getElementById('mb_status');
+              const resultsEl = document.getElementById('mb_results');
+
+              const kindFromType = (t) => {
+                const v = (t || '').toLowerCase();
+                if (v === 'album') return 'album';
+                if (v === 'song') return 'song';
+                return 'artist';
+              };
+
+              const syncNameVisibility = () => {
+                const hasType = !!(typeSelect && typeSelect.value);
+                if (nameField) nameField.style.display = hasType ? '' : 'none';
+                if (nameInput) nameInput.disabled = !hasType;
+                if (!hasType) {
+                  if (modalToggle) modalToggle.checked = false;
+                  if (nameInput) nameInput.value = '';
+                  if (mbidInput) mbidInput.value = '';
+                  if (mbUrlInput) mbUrlInput.value = '';
+                  if (contentArtistInput) contentArtistInput.value = '';
+                  if (qInput) qInput.value = '';
+                  if (artistInput) artistInput.value = '';
+                  if (status) status.textContent = '';
+                  if (resultsEl) resultsEl.innerHTML = '';
+                }
+              };
+
+              const syncModalUI = () => {
+                const kind = kindFromType(typeSelect?.value);
+
+                if (qLabel) {
+                  if (kind === 'artist') qLabel.textContent = 'Search for an artist';
+                  else if (kind === 'album') qLabel.textContent = 'Search for an album';
+                  else qLabel.textContent = 'Search for a song';
+                }
+                if (qInput) {
+                  if (kind === 'artist') qInput.placeholder = 'Type artist name';
+                  else if (kind === 'album') qInput.placeholder = 'Type album name';
+                  else qInput.placeholder = 'Type song name';
+                }
+
+                const showArtist = kind !== 'artist';
+                if (artistGroup) artistGroup.style.display = showArtist ? '' : 'none';
+                if (!showArtist && artistInput) artistInput.value = '';
+              };
+
+              const esc = (s) =>
+                String(s || '')
+                  .replaceAll('&', '&amp;')
+                  .replaceAll('<', '&lt;')
+                  .replaceAll('>', '&gt;')
+                  .replaceAll('"', '&quot;')
+                  .replaceAll("'", '&#39;');
+
+              const render = (items, kind) => {
+                if (!items || !items.length) {
+                  resultsEl.innerHTML = '';
+                  return;
+                }
+
+                const kindIcon = (k) => {
+                  if (k === 'song') return '♪';
+                  if (k === 'album') return '💿';
+                  return '👤';
+                };
+
+                const rows = items
+                  .map((it, idx) => {
+                    const title = it.title || 'Untitled';
+                    const artist = it.artist || '';
+                    const dis = it.disambiguation ? ` — ${it.disambiguation}` : '';
+                    const typeLabel = it.kind_label || (kind ? (kind[0].toUpperCase() + kind.slice(1)) : '');
+                    const features = it.features || '';
+                    const icon = kindIcon(kind);
+                    const meta = (kind === 'song' || kind === 'album'
+                      ? [
+                          typeLabel ? esc(typeLabel) : '',
+                          artist ? `• ${esc(artist)}` : '',
+                        ]
+                      : [
+                          artist ? esc(artist) : '',
+                          typeLabel ? `• ${esc(typeLabel)}` : '',
+                        ])
+                      .filter(Boolean)
+                      .join(' ');
+                    return `
+                      <div style="
+                        display:flex;
+                        gap:12px;
+                        align-items:flex-start;
+                        padding:12px;
+                        border:1px solid var(--border);
+                        border-radius:14px;
+                        background: color-mix(in srgb, var(--surface) 88%, transparent);
+                        cursor:pointer;
+                      " data-idx="${idx}" role="button" tabindex="0" aria-label="Select result">
+                        <div class="mb-result-thumb" aria-hidden="true" style="
+                          width:44px;
+                          height:44px;
+                          border-radius:12px;
+                          border:1px solid var(--border);
+                          background: color-mix(in srgb, var(--surface) 80%, transparent);
+                          box-shadow: var(--shadow-sm);
+                          flex: 0 0 auto;
+                          display:flex;
+                          align-items:center;
+                          justify-content:center;
+                          overflow:hidden;
+                        ">
+                          <span style="color: var(--subtle); font-weight: 900;">${esc(icon)}</span>
+                        </div>
+
+                        <div style="
+                          display:block;
+                          min-width:0;
+                          width:100%;
+                          overflow-wrap:anywhere;
+                          word-break:break-word;
+                        ">
+                          <div style="font-weight:900; color: var(--ink);">
+                            ${esc(title)}${esc(dis)}
+                          </div>
+                          <div style="color: var(--subtle); margin-top: 2px;">
+                            ${meta}
+                          </div>
+                        </div>
+                      </div>
+                    `;
+                  })
+                  .join('');
+
+                resultsEl.innerHTML = `<div style="display:grid; gap:10px;">${rows}</div>`;
+
+                resultsEl.querySelectorAll('[data-idx]').forEach((row) => {
+                  const select = () => {
+                    const idx = Number(row.getAttribute('data-idx'));
+                    const it = items[idx];
+                    if (!it) return;
+                    const selectedTitle = it.title || '';
+                    const selectedArtist = it.artist || '';
+                    nameInput.value =
+                      (kind === 'song' || kind === 'album') && selectedArtist
+                        ? `${selectedTitle} — ${selectedArtist}`
+                        : selectedTitle;
+                    mbidInput.value = it.mbid || '';
+                    mbUrlInput.value = it.url || '';
+                    if (contentArtistInput) contentArtistInput.value = it.artist || '';
+                    if (modalToggle) modalToggle.checked = false;
+                    nameInput.focus();
+                  };
+                  row.addEventListener('click', select);
+                  row.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      select();
+                    }
+                  });
+                });
+              };
+
+              const openModal = () => {
+                if (!modalToggle) return;
+                modalToggle.checked = true;
+                syncModalUI();
+                status.textContent = '';
+                resultsEl.innerHTML = '';
+                const current = (nameInput?.value || '').trim();
+                if (qInput && current) qInput.value = current;
+                window.setTimeout(() => qInput?.focus(), 0);
+              };
+
+              const doSearch = async () => {
+                const q = (qInput.value || '').trim();
+                if (!q) {
+                  status.textContent = 'Type a search query.';
+                  resultsEl.innerHTML = '';
+                  return;
+                }
+
+                const kind = kindFromType(typeSelect?.value);
+                const artist = (artistInput?.value || '').trim();
+                status.textContent = 'Searching...';
+                resultsEl.innerHTML = '';
+
+                try {
+                  const res = await fetch(
+                    `/api/musicbrainz/search?${new URLSearchParams({
+                      kind,
+                      q,
+                      ...(artist ? { artist } : {}),
+                      limit: '10',
+                    }).toString()}`,
+                    { headers: { Accept: 'application/json' } },
+                  );
+                  const data = await res.json();
+                  if (!data || !data.ok) {
+                    status.textContent = data?.error || 'Search failed.';
+                    return;
+                  }
+                  const items = data.items || [];
+                  status.textContent = items.length ? `Found ${items.length} results` : 'No results.';
+                  render(items, kind);
+                } catch (e) {
+                  status.textContent = 'Search failed. Try again.';
+                }
+              };
+
+              btn?.addEventListener('click', doSearch);
+              qInput?.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  doSearch();
+                }
+              });
+
+              const _openFromPointer = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (!typeSelect?.value) return;
+                nameInput?.blur();
+                openModal();
+              };
+              nameInput?.addEventListener('pointerdown', _openFromPointer);
+              nameInput?.addEventListener('mousedown', _openFromPointer);
+
+              nameInput?.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  if (!typeSelect?.value) return;
+                  openModal();
+                }
+              });
+
+              modalToggle?.addEventListener('change', () => {
+                if (!modalToggle.checked) {
+                  if (qInput) qInput.value = '';
+                  if (artistInput) artistInput.value = '';
+                  status.textContent = '';
+                  resultsEl.innerHTML = '';
+                }
+              });
+
+              typeSelect?.addEventListener('change', () => {
+                if (modalToggle?.checked) syncModalUI();
+                syncNameVisibility();
+              });
+
+              syncNameVisibility();
+            })();
+          </script>
 
           <div class="rating-block">
             <p class="rating-title">Flow</p>
@@ -230,3 +530,4 @@
         </form>
     
 {% endblock %}
+

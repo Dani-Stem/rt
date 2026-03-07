@@ -53,7 +53,7 @@ block content_main_class %}ratings-container{% endblock %} {% block content_main
       class="{% if current_user.is_authenticated and rating[8] == current_user.username %}is-owner{% endif %}"
     >
       {% set pct = percent_map.get(rating[0]) if percent_map else None %} {% if
-      pct %}
+      pct is not none %}
       <span class="rating-percent" aria-hidden="true">{{ pct }}%</span>
       {% endif %} {% set owner_username = rating[8] %}
 

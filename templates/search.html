@@ -74,7 +74,7 @@ block content_main_class %}ratings-container{% endblock %} {% block content_main
       {% for rating in ratings %}
       <li onclick="window.location='/rating/{{ rating[0] }}'">
         {% set pct = percent_map.get(rating[0]) if percent_map else None %} {%
-        if pct %}
+        if pct is not none %}
         <span class="rating-percent" aria-hidden="true">{{ pct }}%</span>
         {% endif %} {% set owner_username = rating[8] %}
 

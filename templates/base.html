@@ -113,7 +113,7 @@
 
         <div class="nav-links">
           <a href="/" class="btn-nav">HOME</a>
-          <a href="/browse" class="btn-nav">BROWSE</a>
+          <a href="/browse" class="btn-nav">RATINGS</a>
           <a href="/favorites" class="btn-nav">FAVORITES</a>
           <a href="/playlists" class="btn-nav">PLAYLISTS</a>
           <a href="/users" class="btn-nav">USERS</a>
@@ -159,7 +159,7 @@
 
           <div class="nav-card-links">
             <a href="/" class="btn-nav">HOME</a>
-            <a href="/browse" class="btn-nav">BROWSE</a>
+            <a href="/browse" class="btn-nav">RATINGS</a>
             <a href="/favorites" class="btn-nav">FAVORITES</a>
             <a href="/playlists" class="btn-nav">PLAYLISTS</a>
             <a href="/users" class="btn-nav">USERS</a>
@@ -273,7 +273,7 @@
         <div class="bulletin-header">
           <p class="title_search">BULLETIN</p>
           {% if bulletin_count %}
-          <span class="sidebar-count sidebar-count-corner" aria-label="{{ bulletin_count }} bulletin posts">
+          <span class="sidebar-count sidebar-count-corner" data-sidebar-bulletin-count aria-label="{{ bulletin_count }} bulletin posts">
             {{ bulletin_count }}
           </span>
           {% endif %}
@@ -282,54 +282,8 @@
           </label>
         </div>
         <div class="sidebar-collapsible sidebar-static">
-          <ul class="sidebar-list">
-            {% for post in bulletins[:5] %}
-            <li class="sidebar-item">
-              <div class="bulletin-link" role="link" tabindex="0" onclick="window.location='/bulletin/{{ post.bulletin_key }}'"
-                onkeydown="if (event.key === 'Enter') { window.location='/bulletin/{{ post.bulletin_key }}'; }">
-                {% set t = (post.type or 'praise')|lower|trim %} {% set
-                flair_map = { 'poll': 'flair-poll', 'praise': 'flair-praise',
-                'critique': 'flair-critique', 'show & tell':
-                'flair-show-tell', 'rating highlight':
-                'flair-rating-highlight', 'rating challenge':
-                'flair-rating-challenge' } %} {% set flair = flair_map.get(t,
-                'flair-praise') %}
-                <div class="bulletin-summary">
-                  <span class="bulletin-summary-left">
-                    <span class="bulletin-type {{ flair }}" title="{{ t }}" aria-label="{{ t }}">{{ t }}</span>
-                  </span>
-                  
-                  <span class="bulletin-by">@{{ post.created_by }}</span>
-
-                  <span class="bulletin-summary-right">
-                    {% if post.time_ago %}
-                    <span class="sidebar-meta">{{ post.time_ago }}</span>
-                    {% endif %} {% if current_user.is_authenticated and
-                    post.created_by_user_id == current_user.id %}
-                    <form method="post" action="/bulletin/{{ post.bulletin_key }}/delete" class="bulletin-delete-form" onsubmit="
-                          event.preventDefault();
-                          event.stopPropagation();
-                          if (confirm('Delete this post?')) {
-                            this.submit();
-                          }
-                        ">
-                      <input type="hidden" name="next" value="{{ request.path }}" />
-                      <button type="submit" class="bulletin-delete" aria-label="Delete bulletin post" title="Delete"
-                        onclick="event.stopPropagation()">
-                        ×
-                      </button>
-                    </form>
-                    {% endif %}
-                  </span>
-                </div>
-                {% if post.title %}
-                <div class="bulletin-title" title="{{ post.title }}">{{ post.title }}</div>
-                {% endif %}
-              </div>
-            </li>
-            {% else %}
-            <li class="sidebar-item">No bulletin posts yet.</li>
-            {% endfor %}
+          <ul class="sidebar-list" data-sidebar-bulletin-list>
+            {% include "_sidebar_bulletin_items.html" %}
           </ul>
         </div>
         <div class="sidebar-viewall-row">
@@ -347,7 +301,7 @@
           <div class="bulletin-header">
             <p class="title_search">BULLETIN</p>
             {% if bulletin_count %}
-            <span class="sidebar-count sidebar-count-corner" aria-label="{{ bulletin_count }} bulletin posts">
+            <span class="sidebar-count sidebar-count-corner" data-sidebar-bulletin-count aria-label="{{ bulletin_count }} bulletin posts">
               {{ bulletin_count }}
             </span>
             {% endif %}
@@ -356,55 +310,8 @@
             </label>
           </div>
           <div class="sidebar-collapsible sidebar-static">
-            <ul class="sidebar-list">
-              {% for post in bulletins[:5] %}
-              <li class="sidebar-item">
-                <div class="bulletin-link" role="link" tabindex="0"
-                  onclick="window.location='/bulletin/{{ post.bulletin_key }}'"
-                  onkeydown="if (event.key === 'Enter') { window.location='/bulletin/{{ post.bulletin_key }}'; }">
-                  {% set t = (post.type or 'praise')|lower|trim %} {% set
-                  flair_map = { 'poll': 'flair-poll', 'praise': 'flair-praise',
-                  'critique': 'flair-critique', 'show & tell':
-                  'flair-show-tell', 'rating highlight':
-                  'flair-rating-highlight', 'rating challenge':
-                  'flair-rating-challenge' } %} {% set flair = flair_map.get(t,
-                  'flair-praise') %}
-                  <div class="bulletin-summary">
-                    <span class="bulletin-summary-left">
-                      <span class="bulletin-type {{ flair }}" title="{{ t }}" aria-label="{{ t }}">{{ t }}</span>
-                      <span class="bulletin-by">@{{ post.created_by }}</span>
-                    </span>
-
-                    <span class="bulletin-summary-right">
-                      {% if post.time_ago %}
-                      <span class="sidebar-meta">{{ post.time_ago }}</span>
-                      {% endif %} {% if current_user.is_authenticated and
-                      post.created_by_user_id == current_user.id %}
-                      <form method="post" action="/bulletin/{{ post.bulletin_key }}/delete" class="bulletin-delete-form"
-                        onsubmit="
-                            event.preventDefault();
-                            event.stopPropagation();
-                            if (confirm('Delete this post?')) {
-                              this.submit();
-                            }
-                          ">
-                        <input type="hidden" name="next" value="{{ request.path }}" />
-                        <button type="submit" class="bulletin-delete" aria-label="Delete bulletin post" title="Delete"
-                          onclick="event.stopPropagation()">
-                          ×
-                        </button>
-                      </form>
-                      {% endif %}
-                    </span>
-                  </div>
-                  {% if post.title %}
-                  <div class="bulletin-title" title="{{ post.title }}">{{ post.title }}</div>
-                  {% endif %}
-                </div>
-              </li>
-              {% else %}
-              <li class="sidebar-item">No bulletin posts yet.</li>
-              {% endfor %}
+            <ul class="sidebar-list" data-sidebar-bulletin-list>
+              {% include "_sidebar_bulletin_items.html" %}
             </ul>
           </div>
           <div class="sidebar-viewall-row">
@@ -455,87 +362,37 @@
           <div class="alerts-header">
             <p class="title_search">ALERTS</p>
             {% if unread_alert_count %}
-            <span class="alerts-count sidebar-count-corner" aria-label="{{ unread_alert_count }} new alerts">
+            <span class="alerts-count sidebar-count-corner" data-sidebar-alert-count aria-label="{{ unread_alert_count }} new alerts">
               {{ unread_alert_count }}
             </span>
             {% endif %}
           </div>
           <div class="sidebar-collapsible sidebar-static">
-            <ul class="sidebar-list">
-              {% for alert in alerts[:5] %}
-              <li class="sidebar-item">
-                {% if not alert.is_read %}
-                <span class="alert-dot" aria-hidden="true"></span>
-                {% endif %}
-                <a class="sidebar-link" href="/alerts/{{ alert.alert_id }}/go?next={{ request.path }}">
-                  {% if alert.message %} {% set parts =
-                  alert.message.split(None, 1) %}
-                  <span class="alert-username"><span class="pill-text">{{ parts[0] }}</span></span>{% if parts|length >
-                  1 %} {{ parts[1] }}{% endif %} {%
-                  endif %}
-                </a>
-                <span class="alert-actions">
-                  {% if alert.time_ago %}
-                  <span class="sidebar-meta">{{ alert.time_ago }}</span>
-                  {% endif %}
-                  <form class="alert-delete-form" method="post"
-                    action="/alerts/{{ alert.alert_id }}/delete?next={{ request.full_path }}">
-                    <button type="submit" class="bulletin-delete alert-delete-btn" aria-label="Delete alert"
-                      title="Delete">
-                      ×
-                    </button>
-                  </form>
-                </span>
-              </li>
-              {% else %}
-              <li class="sidebar-item">No alerts yet.</li>
-              {% endfor %}
+            <ul class="sidebar-list" data-sidebar-alert-list>
+              {% include "_sidebar_alert_items.html" %}
             </ul>
           </div>
-          {% if alerts %}
-          <div class="sidebar-viewall-row">
+          <div
+            class="sidebar-viewall-row"
+            data-sidebar-alert-viewall
+            {% if not alerts %}style="display:none"{% endif %}
+          >
             <a class="alerts-viewall" href="/alerts">View all</a>
           </div>
-          {% endif %}
         </div>
         {% endif %} {% if current_user.is_authenticated %}
         <div class="activity-card">
           <div class="activity-header">
             <p class="title_search">ACTIVITY</p>
             {% if activity_count %}
-            <span class="sidebar-count sidebar-count-corner" aria-label="{{ activity_count }} activity items">
+            <span class="sidebar-count sidebar-count-corner" data-sidebar-activity-count aria-label="{{ activity_count }} activity items">
               {{ activity_count }}
             </span>
             {% endif %}
           </div>
           <div class="sidebar-collapsible sidebar-static">
-            <ul class="sidebar-list">
-              {% for item in activities[:5] %}
-              <li class="sidebar-item activity-item{% if item.action %} action-{{ item.action }}{% endif %}">
-                {% if item.url %}
-                <a class="sidebar-link btn-nav pill-action activity-pill-link" href="{{ item.url }}">
-                  {% if item.text %} {% set tokens = item.text.split(' ') %}
-                  {% for tok in tokens %} {% if loop.index0 > 0 %} {% endif %}
-                  {% if tok.startswith('@') %}
-                  <span class="alert-username{% if not loop.first %} is-secondary{% endif %}"><span class="pill-text">{{
-                      tok }}</span></span>
-                  {% else %} {% if loop.index0 == 1 %}
-                  <span class="activity-verb">{{ tok }}</span>
-                  {% else %} {{ tok }} {% endif %} {% endif %} {% endfor %} {% endif %}
-                </a>
-                {% else %} {% if item.text %} {% set tokens =
-                item.text.split(' ') %} {% for tok in tokens %} {% if
-                loop.index0 > 0 %} {% endif %} {% if tok.startswith('@') %}
-                <span class="alert-username{% if not loop.first %} is-secondary{% endif %}"><span class="pill-text">{{
-                    tok }}</span></span>
-                {% else %} {% if loop.index0 == 1 %}
-                <span class="activity-verb">{{ tok }}</span>
-                {% else %} {{ tok }} {% endif %} {% endif %} {% endfor %} {% endif %} {%
-                endif %}
-              </li>
-              {% else %}
-              <li class="sidebar-item">No activity yet.</li>
-              {% endfor %}
+            <ul class="sidebar-list" data-sidebar-activity-list>
+              {% include "_sidebar_activity_items.html" %}
             </ul>
           </div>
           <div class="sidebar-viewall-row">
@@ -593,6 +450,8 @@
       autoResize(el);
       el.addEventListener('input', () => autoResize(el));
     });
+
+    // Sidebar is static and updates on page reload (no SSE/polling).
 
     const updateUsernamePills = () => {
       const pills = document.querySelectorAll('.alert-username');

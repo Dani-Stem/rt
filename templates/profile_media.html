@@ -33,7 +33,7 @@ content_main %}
     {% for rating in rows %}
     <li onclick="window.location='/rating/{{ rating[0] }}'">
       {% set pct = percent_map.get(rating[0]) if percent_map else None %} {% if
-      pct %}
+      pct is not none %}
       <span class="rating-percent" aria-hidden="true">{{ pct }}%</span>
       {% endif %}
       <span class="rating-item-text">

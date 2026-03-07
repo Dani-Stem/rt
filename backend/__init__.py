@@ -1,7 +1,9 @@
-from flask import Flask, request, session, redirect, flash
+import os
+from flask import Flask, request, session, redirect, flash, send_from_directory
 from flask_login import LoginManager, current_user
 from pathlib import Path
 from datetime import datetime, timezone
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 ROOT_DIR = Path(__file__).resolve().parent
 BASE_DIR = ROOT_DIR.parent
@@ -15,8 +17,33 @@ def create_app():
         static_folder=str(BASE_DIR / "static"),
     )
 
-    app.config["SECRET_KEY"] = "dev-secret-key"
-    app.config["UPLOAD_FOLDER"] = str(BASE_DIR / "static" / "uploads")
+    # When running behind a reverse proxy (like Render), respect forwarded headers.
+    # This keeps request.host_url / scheme accurate.
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)  # type: ignore[assignment]
+
+    app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-key")
+
+    # Uploads: default to a folder inside the repo for local dev, but allow overriding
+    # to a persistent disk path (e.g. /var/data/uploads) on Render.
+    upload_folder = os.environ.get("UPLOAD_FOLDER") or str(BASE_DIR / "static" / "uploads")
+    app.config["UPLOAD_FOLDER"] = upload_folder
+    app.config["UPLOAD_URL_PREFIX"] = (os.environ.get("UPLOAD_URL_PREFIX") or "/uploads").rstrip("/")
+
+    try:
+        Path(upload_folder).mkdir(parents=True, exist_ok=True)
+    except Exception:
+        pass
+
+    # Serve uploaded files from UPLOAD_FOLDER. We support both:
+    # - /uploads/... (new default)
+    # - /static/uploads/... (backwards compatible with older stored URLs)
+    @app.route(f"{app.config['UPLOAD_URL_PREFIX']}/<path:filename>")
+    def uploaded_file(filename: str):
+        return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
+
+    @app.route("/static/uploads/<path:filename>")
+    def uploaded_file_legacy(filename: str):
+        return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
 
     # Initialize database
     from backend._db_setup import init_db
@@ -215,6 +242,12 @@ def create_app():
                     f"@{actor} unliked a rating: {entity_label}"
                     if entity_label
                     else f"@{actor} unliked a rating"
+                )
+            elif action == "rating_reaction":
+                text = (
+                    f"@{actor} reacted to a rating: {entity_label}"
+                    if entity_label
+                    else f"@{actor} reacted to a rating"
                 )
             elif action == "rating_category_upvote":
                 detail = (metadata.get("detail") or "").strip() or "a category"

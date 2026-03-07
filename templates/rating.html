@@ -3,7 +3,9 @@
 content_main %}
 <div class="page-head rating-detail-head">
   <p class="title_search">Rating Details</p>
+  {% if percent is not none %}
   <span class="rating-percent">{{ percent }}%</span>
+  {% endif %}
 </div>
 
 {% if rating_image_url %}
@@ -23,30 +25,39 @@ content_main %}
     <div class="rating-summary-top">
       <div class="summary-main">
         <div style="display: flex; align-items: center; gap: 8px">
-          {% if owner %}
-          <a class="avatar-wrap" href="/user/{{ owner }}">
-            {% if owner_pic %}
-            <img
-              class="avatar"
-              src="{{ owner_pic }}"
-              alt="{{ owner }} avatar"
-            />
-            {% else %}
-            <span class="avatar-initial">{{ owner[0]|upper }}</span>
-            {% endif %}
-          </a>
-          {% endif %}
-          <div>
-            <h2 class="title" style="margin: 0">
-              {{ rating[1] }}
-              <span class="divider">•</span>
-              <span class="subject">{{ rating[2] }}</span>
-            </h2>
+          <div style="width: 100%;">
             {% if owner %}
-            <a class="rating-owner link-plain" href="/user/{{ owner }}">
-              @{{ owner }}
-            </a>
+            <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 2px;">
+              <a class="avatar-wrap" href="/user/{{ owner }}">
+                {% if owner_pic %}
+                <img
+                  class="avatar"
+                  src="{{ owner_pic }}"
+                  alt="{{ owner }} avatar"
+                />
+                {% else %}
+                <span class="avatar-initial">{{ owner[0]|upper }}</span>
+                {% endif %}
+              </a>
+              <a class="rating-owner link-plain" href="/user/{{ owner }}">
+                @{{ owner }}
+              </a>
+            </div>
             {% endif %}
+            <div style="text-align: center; font-size: 0.98rem; font-weight: 900; letter-spacing: 0.06em; text-transform: uppercase; color: var(--subtle); margin-bottom: 2px;">
+              {{ rating[1] }}
+            </div>
+            <h2 class="title" style="margin: 0; text-align: center;">
+              <a class="subject" href="/rating/{{ rating[0] }}/also-rated" style="text-decoration:none; color: inherit;">
+                {{ rating[2] }}
+              </a>
+              {% if subject_artist %}
+              <span class="divider">•</span>
+              <a href="/rating/{{ rating[0] }}/also-rated" style="text-decoration:none; color: inherit;">
+                {{ subject_artist }}
+              </a>
+              {% endif %}
+            </h2>
           </div>
         </div>
       </div>
@@ -137,17 +148,57 @@ content_main %}
           </form>
         </div>
 
-        {% set reactions = detail_reactions.get('Lyrics') if detail_reactions
-        else [] %} {% if reactions %}
-        <div
-          class="rating-reactions rating-reactions-bottom"
-          aria-hidden="true"
-        >
-          {% for emoji in reactions %}
-          <span class="rating-emoji">{{ emoji }}</span>
-          {% endfor %}
+        <div class="detail-reactions-right">
+          <div
+            class="rating-reactions rating-reactions-bottom rating-reactions-live"
+            data-category="Lyrics"
+          >
+            {% set reactions = (reaction_summary.get('Lyrics', []) if reaction_summary else []) %}
+            {% for r in reactions %}
+            <button
+              type="button"
+              class="rating-reaction-pill {% if user_reactions and (r.emoji in (user_reactions.get('Lyrics') or [])) %}is-active{% endif %}"
+              data-category="Lyrics"
+              data-emoji="{{ r.emoji }}"
+              aria-label="React {{ r.emoji }}"
+              title="Toggle reaction"
+              {% if not can_react %}disabled{% endif %}
+            >
+              <span class="rating-emoji">{{ r.emoji }}</span>
+              <span class="reaction-count">{{ r.count }}</span>
+            </button>
+            {% endfor %}
+          </div>
+
+          {% if can_react %}
+          <details class="emoji-picker" data-category="Lyrics">
+            <summary
+              class="emoji-picker-trigger"
+              aria-label="Add reaction to Lyrics"
+              title="Add reaction"
+            >
+              😊
+            </summary>
+            <div class="emoji-picker-panel" role="menu" aria-label="Emoji picker">
+              {% for e in reaction_emojis %}
+              <button
+                type="button"
+                class="emoji-option"
+                data-category="Lyrics"
+                data-emoji="{{ e }}"
+                aria-label="React {{ e }}"
+              >
+                {{ e }}
+              </button>
+              {% endfor %}
+            </div>
+          </details>
+          {% else %}
+          <span class="emoji-picker-trigger is-disabled" title="Log in to react"
+            >😊</span
+          >
+          {% endif %}
         </div>
-        {% endif %}
       </div>
     </div>
     <div class="detail-item">
@@ -209,17 +260,57 @@ content_main %}
           </form>
         </div>
 
-        {% set reactions = detail_reactions.get('Beat') if detail_reactions else
-        [] %} {% if reactions %}
-        <div
-          class="rating-reactions rating-reactions-bottom"
-          aria-hidden="true"
-        >
-          {% for emoji in reactions %}
-          <span class="rating-emoji">{{ emoji }}</span>
-          {% endfor %}
+        <div class="detail-reactions-right">
+          <div
+            class="rating-reactions rating-reactions-bottom rating-reactions-live"
+            data-category="Beat"
+          >
+            {% set reactions = (reaction_summary.get('Beat', []) if reaction_summary else []) %}
+            {% for r in reactions %}
+            <button
+              type="button"
+              class="rating-reaction-pill {% if user_reactions and (r.emoji in (user_reactions.get('Beat') or [])) %}is-active{% endif %}"
+              data-category="Beat"
+              data-emoji="{{ r.emoji }}"
+              aria-label="React {{ r.emoji }}"
+              title="Toggle reaction"
+              {% if not can_react %}disabled{% endif %}
+            >
+              <span class="rating-emoji">{{ r.emoji }}</span>
+              <span class="reaction-count">{{ r.count }}</span>
+            </button>
+            {% endfor %}
+          </div>
+
+          {% if can_react %}
+          <details class="emoji-picker" data-category="Beat">
+            <summary
+              class="emoji-picker-trigger"
+              aria-label="Add reaction to Beat"
+              title="Add reaction"
+            >
+              😊
+            </summary>
+            <div class="emoji-picker-panel" role="menu" aria-label="Emoji picker">
+              {% for e in reaction_emojis %}
+              <button
+                type="button"
+                class="emoji-option"
+                data-category="Beat"
+                data-emoji="{{ e }}"
+                aria-label="React {{ e }}"
+              >
+                {{ e }}
+              </button>
+              {% endfor %}
+            </div>
+          </details>
+          {% else %}
+          <span class="emoji-picker-trigger is-disabled" title="Log in to react"
+            >😊</span
+          >
+          {% endif %}
         </div>
-        {% endif %}
       </div>
     </div>
     <div class="detail-item">
@@ -281,17 +372,57 @@ content_main %}
           </form>
         </div>
 
-        {% set reactions = detail_reactions.get('Flow') if detail_reactions else
-        [] %} {% if reactions %}
-        <div
-          class="rating-reactions rating-reactions-bottom"
-          aria-hidden="true"
-        >
-          {% for emoji in reactions %}
-          <span class="rating-emoji">{{ emoji }}</span>
-          {% endfor %}
+        <div class="detail-reactions-right">
+          <div
+            class="rating-reactions rating-reactions-bottom rating-reactions-live"
+            data-category="Flow"
+          >
+            {% set reactions = (reaction_summary.get('Flow', []) if reaction_summary else []) %}
+            {% for r in reactions %}
+            <button
+              type="button"
+              class="rating-reaction-pill {% if user_reactions and (r.emoji in (user_reactions.get('Flow') or [])) %}is-active{% endif %}"
+              data-category="Flow"
+              data-emoji="{{ r.emoji }}"
+              aria-label="React {{ r.emoji }}"
+              title="Toggle reaction"
+              {% if not can_react %}disabled{% endif %}
+            >
+              <span class="rating-emoji">{{ r.emoji }}</span>
+              <span class="reaction-count">{{ r.count }}</span>
+            </button>
+            {% endfor %}
+          </div>
+
+          {% if can_react %}
+          <details class="emoji-picker" data-category="Flow">
+            <summary
+              class="emoji-picker-trigger"
+              aria-label="Add reaction to Flow"
+              title="Add reaction"
+            >
+              😊
+            </summary>
+            <div class="emoji-picker-panel" role="menu" aria-label="Emoji picker">
+              {% for e in reaction_emojis %}
+              <button
+                type="button"
+                class="emoji-option"
+                data-category="Flow"
+                data-emoji="{{ e }}"
+                aria-label="React {{ e }}"
+              >
+                {{ e }}
+              </button>
+              {% endfor %}
+            </div>
+          </details>
+          {% else %}
+          <span class="emoji-picker-trigger is-disabled" title="Log in to react"
+            >😊</span
+          >
+          {% endif %}
         </div>
-        {% endif %}
       </div>
     </div>
     <div class="detail-item">
@@ -353,17 +484,57 @@ content_main %}
           </form>
         </div>
 
-        {% set reactions = detail_reactions.get('Melody') if detail_reactions
-        else [] %} {% if reactions %}
-        <div
-          class="rating-reactions rating-reactions-bottom"
-          aria-hidden="true"
-        >
-          {% for emoji in reactions %}
-          <span class="rating-emoji">{{ emoji }}</span>
-          {% endfor %}
+        <div class="detail-reactions-right">
+          <div
+            class="rating-reactions rating-reactions-bottom rating-reactions-live"
+            data-category="Melody"
+          >
+            {% set reactions = (reaction_summary.get('Melody', []) if reaction_summary else []) %}
+            {% for r in reactions %}
+            <button
+              type="button"
+              class="rating-reaction-pill {% if user_reactions and (r.emoji in (user_reactions.get('Melody') or [])) %}is-active{% endif %}"
+              data-category="Melody"
+              data-emoji="{{ r.emoji }}"
+              aria-label="React {{ r.emoji }}"
+              title="Toggle reaction"
+              {% if not can_react %}disabled{% endif %}
+            >
+              <span class="rating-emoji">{{ r.emoji }}</span>
+              <span class="reaction-count">{{ r.count }}</span>
+            </button>
+            {% endfor %}
+          </div>
+
+          {% if can_react %}
+          <details class="emoji-picker" data-category="Melody">
+            <summary
+              class="emoji-picker-trigger"
+              aria-label="Add reaction to Melody"
+              title="Add reaction"
+            >
+              😊
+            </summary>
+            <div class="emoji-picker-panel" role="menu" aria-label="Emoji picker">
+              {% for e in reaction_emojis %}
+              <button
+                type="button"
+                class="emoji-option"
+                data-category="Melody"
+                data-emoji="{{ e }}"
+                aria-label="React {{ e }}"
+              >
+                {{ e }}
+              </button>
+              {% endfor %}
+            </div>
+          </details>
+          {% else %}
+          <span class="emoji-picker-trigger is-disabled" title="Log in to react"
+            >😊</span
+          >
+          {% endif %}
         </div>
-        {% endif %}
       </div>
     </div>
     <div class="detail-item">
@@ -425,17 +596,57 @@ content_main %}
           </form>
         </div>
 
-        {% set reactions = detail_reactions.get('Cohesive') if detail_reactions
-        else [] %} {% if reactions %}
-        <div
-          class="rating-reactions rating-reactions-bottom"
-          aria-hidden="true"
-        >
-          {% for emoji in reactions %}
-          <span class="rating-emoji">{{ emoji }}</span>
-          {% endfor %}
+        <div class="detail-reactions-right">
+          <div
+            class="rating-reactions rating-reactions-bottom rating-reactions-live"
+            data-category="Cohesive"
+          >
+            {% set reactions = (reaction_summary.get('Cohesive', []) if reaction_summary else []) %}
+            {% for r in reactions %}
+            <button
+              type="button"
+              class="rating-reaction-pill {% if user_reactions and (r.emoji in (user_reactions.get('Cohesive') or [])) %}is-active{% endif %}"
+              data-category="Cohesive"
+              data-emoji="{{ r.emoji }}"
+              aria-label="React {{ r.emoji }}"
+              title="Toggle reaction"
+              {% if not can_react %}disabled{% endif %}
+            >
+              <span class="rating-emoji">{{ r.emoji }}</span>
+              <span class="reaction-count">{{ r.count }}</span>
+            </button>
+            {% endfor %}
+          </div>
+
+          {% if can_react %}
+          <details class="emoji-picker" data-category="Cohesive">
+            <summary
+              class="emoji-picker-trigger"
+              aria-label="Add reaction to Cohesive"
+              title="Add reaction"
+            >
+              😊
+            </summary>
+            <div class="emoji-picker-panel" role="menu" aria-label="Emoji picker">
+              {% for e in reaction_emojis %}
+              <button
+                type="button"
+                class="emoji-option"
+                data-category="Cohesive"
+                data-emoji="{{ e }}"
+                aria-label="React {{ e }}"
+              >
+                {{ e }}
+              </button>
+              {% endfor %}
+            </div>
+          </details>
+          {% else %}
+          <span class="emoji-picker-trigger is-disabled" title="Log in to react"
+            >😊</span
+          >
+          {% endif %}
         </div>
-        {% endif %}
       </div>
     </div>
   </section>
@@ -448,6 +659,145 @@ content_main %}
 </div>
 
 <div class="rating-comments-spacer" aria-hidden="true"></div>
+
+<script>
+  (function () {
+    const canReact = "{{ '1' if can_react else '0' }}" === "1";
+    const canCategoryVote = "{{ '1' if can_category_vote else '0' }}" === "1";
+
+    const ratingKey = Number("{{ rating[0] }}");
+    const endpoint = `/rating/${ratingKey}/reactions/toggle`;
+    const voteEndpoint = `/rating/${ratingKey}/category-vote`;
+
+    function renderReactionBar(category, reactions) {
+      const bar = document.querySelector(
+        `.rating-reactions-live[data-category="${category}"]`
+      );
+      if (!bar) return;
+
+      bar.innerHTML = "";
+      for (const r of reactions || []) {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "rating-reaction-pill" + (r.me ? " is-active" : "");
+        btn.dataset.category = category;
+        btn.dataset.emoji = r.emoji;
+        btn.title = "Toggle reaction";
+
+        const em = document.createElement("span");
+        em.className = "rating-emoji";
+        em.textContent = r.emoji;
+
+        const count = document.createElement("span");
+        count.className = "reaction-count";
+        count.textContent = String(r.count ?? 0);
+
+        btn.appendChild(em);
+        btn.appendChild(count);
+        bar.appendChild(btn);
+      }
+    }
+
+    async function toggleReaction(category, emoji) {
+      if (!canReact) return;
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ category, emoji }),
+      });
+
+      if (res.status === 401) {
+        window.location.href = "/login";
+        return;
+      }
+
+      const data = await res.json().catch(() => null);
+      if (!data || !data.ok) return;
+      renderReactionBar(data.category, data.reactions);
+    }
+
+    function updateVoteUI(form, mine, score) {
+      if (!form) return;
+      const up = form.querySelector(".cat-vote-btn.is-up");
+      const down = form.querySelector(".cat-vote-btn.is-down");
+      const scoreEl = form.querySelector(".cat-vote-score");
+      if (scoreEl) scoreEl.textContent = String(score ?? 0);
+
+      if (up) up.classList.toggle("is-active", mine === 1);
+      if (down) down.classList.toggle("is-active", mine === -1);
+
+      if (scoreEl) {
+        scoreEl.classList.toggle("is-up", mine === 1);
+        scoreEl.classList.toggle("is-down", mine === -1);
+      }
+    }
+
+    async function sendCategoryVote(form, direction) {
+      if (!canCategoryVote) return;
+      const category = form.querySelector('input[name="category"]')?.value || "";
+      const body = new URLSearchParams();
+      body.set("category", category);
+      body.set("direction", direction);
+
+      const res = await fetch(voteEndpoint, {
+        method: "POST",
+        headers: { "X-Requested-With": "fetch" },
+        body,
+      });
+
+      if (res.status === 401) {
+        window.location.href = "/login";
+        return;
+      }
+
+      const data = await res.json().catch(() => null);
+      if (!data || !data.ok) return;
+      updateVoteUI(form, Number(data.mine ?? 0), Number(data.score ?? 0));
+    }
+
+    function closeAllPickers(exceptEl) {
+      const openPickers = document.querySelectorAll("details.emoji-picker[open]");
+      for (const d of openPickers) {
+        if (exceptEl && (d === exceptEl || d.contains(exceptEl))) continue;
+        d.open = false;
+      }
+    }
+
+    document.addEventListener("click", (e) => {
+      const clickedPicker = e.target.closest("details.emoji-picker");
+      if (!clickedPicker) closeAllPickers();
+
+      const voteBtn = e.target.closest(".category-vote .cat-vote-btn");
+      if (voteBtn) {
+        e.preventDefault();
+        const form = voteBtn.closest("form.category-vote");
+        if (!form) return;
+        const direction = voteBtn.value;
+        sendCategoryVote(form, direction);
+        return;
+      }
+
+      const opt = e.target.closest(".emoji-option");
+      if (opt) {
+        const category = opt.dataset.category;
+        const emoji = opt.dataset.emoji;
+        const picker = opt.closest("details.emoji-picker");
+        if (picker) picker.open = false;
+        toggleReaction(category, emoji);
+        return;
+      }
+
+      const pill = e.target.closest(".rating-reaction-pill");
+      if (pill) {
+        toggleReaction(pill.dataset.category, pill.dataset.emoji);
+      }
+    });
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") closeAllPickers();
+    });
+  })();
+</script>
 
 <div class="profile-card rating-comments-card comments-section" id="comments">
     <div class="comments-head">
