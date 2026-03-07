@@ -1,0 +1,53 @@
+{% extends "base.html" %} {% block title %}Alerts - RealTop{% endblock %} {%
+block content_main_class %}gradient-container{% endblock %} {% block
+content_main %}
+<div class="page-head">
+  <p class="title_search">Alerts</p>
+  {% if unread_alert_count %}
+  <span class="sidebar-count" aria-label="{{ unread_alert_count }} new alerts">
+    {{ unread_alert_count }}
+  </span>
+  {% endif %}
+</div>
+
+<ul class="sidebar-list alerts-list">
+  {% for alert in items %}
+  <li class="sidebar-item">
+    <span
+      class="alert-dot {% if alert.is_read %}is-read{% endif %}"
+      aria-hidden="true"
+    ></span>
+    <a
+      class="sidebar-link"
+      href="/alerts/{{ alert.alert_id }}/go?next={{ request.path }}"
+    >
+      {% if alert.message %} {% set parts = alert.message.split(None, 1) %}
+      <span class="alert-username"
+        ><span class="pill-text">{{ parts[0] }}</span></span
+      >{% if parts|length > 1 %} {{ parts[1] }}{% endif %} {% endif %}
+    </a>
+    <span class="alert-actions">
+      {% if alert.time_ago %}
+      <span class="sidebar-meta">{{ alert.time_ago }}</span>
+      {% endif %}
+      <form
+        class="alert-delete-form"
+        method="post"
+        action="/alerts/{{ alert.alert_id }}/delete?next={{ request.full_path }}"
+      >
+        <button
+          type="submit"
+          class="bulletin-delete alert-delete-btn"
+          aria-label="Delete alert"
+          title="Delete"
+        >
+          ×
+        </button>
+      </form>
+    </span>
+  </li>
+  {% else %}
+  <li class="sidebar-item">No alerts yet.</li>
+  {% endfor %}
+</ul>
+{% include "_pagination.html" %} {% endblock %}

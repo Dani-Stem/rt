@@ -1,0 +1,168 @@
+{% extends "base.html" %} {% block title %}Activity - RealTop{% endblock %} {%
+block content_main_class %}gradient-container{% endblock %} {% block
+content_main %}
+<div class="page-head">
+  <p class="title_search">Activity</p>
+  <div class="page-head-right">
+    {% if total_count %}
+    <form
+      method="post"
+      action="/activity/clear"
+      class="activity-clear-form"
+      onsubmit="
+        if (!confirm('Clear all activity?')) {
+          event.preventDefault();
+        }
+      "
+    >
+      <input type="hidden" name="tab" value="{{ active_tab }}" />
+      <input type="hidden" name="next" value="{{ request.full_path }}" />
+      <button type="submit" class="activity-viewall">Clear all</button>
+    </form>
+    <span class="sidebar-count" aria-label="{{ total_count }} activity items">
+      {{ total_count }}
+    </span>
+    {% endif %}
+  </div>
+</div>
+
+<div class="activity-tabs">
+  {% for tab in tabs %}
+  <a
+    class="activity-tab {% if tab.key == active_tab %}is-active{% endif %}"
+    href="/activity?tab={{ tab.key }}{% if pagination %}&per_page={{ pagination.per_page }}{% endif %}"
+  >
+    {{ tab.label }}
+  </a>
+  {% endfor %}
+</div>
+
+<ul class="sidebar-list activity-list">
+  {% for item in items %}
+  <li
+    class="sidebar-item activity-item{% if item.action %} action-{{ item.action }}{% endif %}"
+    {% if item.activity_id %}data-activity-id="{{ item.activity_id }}"{% endif %}
+  >
+    {% if item.url %}
+    <a class="sidebar-link" href="{{ item.url }}">
+      {% if item.text %} {% set tokens = item.text.split(' ') %} {% for tok in
+      tokens %} {% if loop.index0 > 0 %} {% endif %} {% if tok.startswith('@')
+      %}
+      <span
+        class="alert-username{% if not loop.first %} is-secondary{% endif %}"
+        ><span class="pill-text">{{ tok }}</span></span
+      >
+      {% else %} {% if loop.index0 == 1 %}
+      <span class="activity-verb">{{ tok }}</span>
+      {% else %} {{ tok }} {% endif %} {% endif %} {% endfor %} {% endif %}
+    </a>
+    {% else %} {% if item.text %} {% set tokens = item.text.split(' ') %} {% for
+    tok in tokens %} {% if loop.index0 > 0 %} {% endif %} {% if
+    tok.startswith('@') %}
+    <span class="alert-username{% if not loop.first %} is-secondary{% endif %}"
+      ><span class="pill-text">{{ tok }}</span></span
+    >
+    {% else %} {% if loop.index0 == 1 %}
+    <span class="activity-verb">{{ tok }}</span>
+    {% else %} {{ tok }} {% endif %} {% endif %} {% endfor %} {% endif %} {% endif %} {% if
+    item.time_ago %}
+    <span class="sidebar-meta">{{ item.time_ago }}</span>
+    {% endif %} {% if item.activity_id %}
+    <form
+      method="post"
+      action="/activity/{{ item.activity_id }}/dismiss"
+      class="activity-delete-form"
+      onsubmit="
+        if (!confirm('Remove this activity item?')) {
+          event.preventDefault();
+        }
+      "
+    >
+      <input type="hidden" name="next" value="{{ request.full_path }}" />
+      <button
+        type="submit"
+        class="activity-delete"
+        aria-label="Remove activity item"
+        title="Remove"
+      >
+        ×
+      </button>
+    </form>
+    {% endif %}
+  </li>
+  {% else %}
+  <li class="sidebar-item">No activity yet.</li>
+  {% endfor %}
+</ul>
+<script>
+  (function () {
+    const list = document.querySelector(".activity-list");
+    if (!list) return;
+
+    function setCount(n) {
+      const countEl = document.querySelector(".page-head-right .sidebar-count");
+      if (!countEl) return;
+      if (!n || n <= 0) {
+        countEl.remove();
+        const clearForm = document.querySelector(".activity-clear-form");
+        if (clearForm) clearForm.remove();
+        return;
+      }
+      countEl.textContent = String(n);
+      countEl.setAttribute("aria-label", `${n} activity items`);
+    }
+
+    function currentCount() {
+      const countEl = document.querySelector(".page-head-right .sidebar-count");
+      if (!countEl) return 0;
+      const n = parseInt((countEl.textContent || "").trim(), 10);
+      return Number.isFinite(n) ? n : 0;
+    }
+
+    function ensureEmptyState() {
+      const anyItems = list.querySelector(".activity-item");
+      if (anyItems) return;
+      const empty = document.createElement("li");
+      empty.className = "sidebar-item";
+      empty.textContent = "No activity yet.";
+      list.appendChild(empty);
+    }
+
+    document.addEventListener("submit", async (e) => {
+      const dismissForm = e.target.closest("form.activity-delete-form");
+      const clearForm = e.target.closest("form.activity-clear-form");
+      if (!dismissForm && !clearForm) return;
+
+      e.preventDefault();
+
+      const res = await fetch(e.target.action, {
+        method: "POST",
+        headers: { "X-Requested-With": "fetch" },
+        body: new FormData(e.target),
+      });
+
+      if (res.status === 401) {
+        window.location.href = "/login";
+        return;
+      }
+
+      const data = await res.json().catch(() => null);
+      if (!data || !data.ok) return;
+
+      if (dismissForm) {
+        const li = dismissForm.closest("li.activity-item");
+        if (li) li.remove();
+        setCount(Math.max(0, currentCount() - 1));
+        ensureEmptyState();
+        return;
+      }
+
+      if (clearForm) {
+        list.innerHTML = "";
+        setCount(0);
+        ensureEmptyState();
+      }
+    });
+  })();
+</script>
+{% include "_pagination.html" %} {% endblock %}

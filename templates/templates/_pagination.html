@@ -1,0 +1,46 @@
+{% if pagination and pagination.show %}
+<div class="pagination-bar" role="navigation" aria-label="Pagination">
+  {% if pagination.prev_url %}
+  <a class="btn-nav pagination-btn" href="{{ pagination.prev_url }}">Prev</a>
+  {% else %}
+  <span class="btn-nav pagination-btn is-disabled" aria-disabled="true"
+    >Prev</span
+  >
+  {% endif %}
+
+  <span class="pagination-meta">Page {{ pagination.page }}</span>
+
+  <form class="pagination-form" method="get" action="{{ request.path }}">
+    {% for k, v in pagination.other_args %}
+    <input type="hidden" name="{{ k }}" value="{{ v }}" />
+    {% endfor %}
+    <input type="hidden" name="page" value="1" />
+
+    <label class="pagination-label" for="per_page">Per page</label>
+    <select
+      id="per_page"
+      name="per_page"
+      class="pagination-select"
+      onchange="this.form.submit()"
+    >
+      {% for opt in pagination.options %}
+      <option value="{{ opt }}" {{ 'selected' if opt == pagination.per_page else '' }}>
+        {{ opt }}
+      </option>
+      {% endfor %}
+    </select>
+
+    <noscript>
+      <button class="btn-nav pagination-btn" type="submit">Apply</button>
+    </noscript>
+  </form>
+
+  {% if pagination.next_url %}
+  <a class="btn-nav pagination-btn" href="{{ pagination.next_url }}">Next</a>
+  {% else %}
+  <span class="btn-nav pagination-btn is-disabled" aria-disabled="true"
+    >Next</span
+  >
+  {% endif %}
+</div>
+{% endif %}

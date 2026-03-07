@@ -1,0 +1,46 @@
+{% extends "base.html" %} {% block title %}{{ title }} - RealTop{% endblock %}
+{% block content_main_class %}gradient-container{% endblock %} {% block
+content_main %}
+<div class="page-head">
+  <p class="title_search">{{ title }}</p>
+</div>
+
+<div class="activity-tabs">
+  <a
+    class="activity-tab {% if active_tab == 'following' %}is-active{% endif %}"
+    href="/user/{{ profile_user.username }}/following{% if pagination %}?per_page={{ pagination.per_page }}{% endif %}"
+  >
+    Following{% if following_count is not none %} ({{ following_count }}){%
+    endif %}
+  </a>
+  <a
+    class="activity-tab {% if active_tab == 'followers' %}is-active{% endif %}"
+    href="/user/{{ profile_user.username }}/followers{% if pagination %}?per_page={{ pagination.per_page }}{% endif %}"
+  >
+    Followers{% if follower_count is not none %} ({{ follower_count }}){% endif
+    %}
+  </a>
+</div>
+
+<div class="profile-card" style="margin-top: 12px">
+  {% if users %}
+  <ul class="follow-list">
+    {% for user in users %}
+    <li class="follow-item">
+      <a class="follow-user-link" href="/user/{{ user.username }}">
+        {% if user.profile_pic %}
+        <img class="avatar" src="{{ user.profile_pic }}" alt="Avatar" />
+        {% else %}
+        <span class="avatar-initial">{{ user.username[0]|upper }}</span>
+        {% endif %}
+        <span class="follow-username">@{{ user.username }}</span>
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <span class="profile-value-about">{{ empty_text }}</span>
+  {% endif %}
+</div>
+
+{% include "_pagination.html" %} {% endblock %}

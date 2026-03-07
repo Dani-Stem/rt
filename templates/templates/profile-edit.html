@@ -1,0 +1,78 @@
+{% extends "base.html" %} {% block title %}Profile - RealTop{% endblock %} {%
+block content_main_class %}gradient-container{% endblock %} {% block
+content_main %}
+{% with messages = get_flashed_messages(with_categories=true) %} {% if messages
+%} {% for category, message in messages %} {% if category == 'profile' %}
+<div
+  class="profile-flash{% if message == 'Profile picture updated.' %} is-success{% endif %}"
+>
+  {{ message }}
+</div>
+{% endif %} {% endfor %} {% endif %} {% endwith %}
+<div class="profile-stack">
+
+  <div class="profile-card profile-upload-form">   
+    <span class="profile-label">Profile Photo:</span>
+    <div class="avatar-large">
+      {% if current_user.profile_pic %}
+      <img src="{{ current_user.profile_pic }}" alt="Avatar" />
+      {% else %}
+      <div class="avatar-placeholder">{{ current_user.username[0]|upper }}</div>
+      {% endif %}
+      {% if current_user.profile_pic %}
+      <form action="/profile/remove" method="post" class="profile-remove-form">
+        <button
+          type="submit"
+          class="btn-remove-avatar"
+          aria-label="Remove profile picture"
+        >
+          <span class="btn-remove-icon">×</span>
+        </button>
+      </form>
+      {% endif %}
+    </div>
+      <form
+        action="/profile/upload"
+        method="post"
+        enctype="multipart/form-data"
+      >
+        <input type="file" name="profile_pic" accept="image/*" />
+        <br /><br />
+        <button type="submit" class="btn-submit">Upload</button>
+      </form>
+  </div>
+
+  <form action="/profile-edit" method="post" class="edit-profile-form">
+    <div class="profile-card profile-info profile-edit-card">
+      <div class="profile-edit-field">
+        <span class="profile-label">Username:</span>
+        <textarea
+          id="username_edit"
+          name="username_edit"
+          rows="1"
+          cols="20"
+          placeholder="{{ current_user.username }}"
+        >{{ current_user.username }}</textarea>
+      </div>
+      <div class="profile-edit-field edit-about-sectioin">
+        <span class="profile-label">About:</span>
+        <textarea
+          id="about"
+          name="about"
+          rows="2"
+          cols="40"
+          placeholder="{{ current_user.about }}"
+        >{{ current_user.about }}</textarea>
+      </div>
+    </div>
+
+    <div class="form-actions profile-edit-actions">
+      <button type="submit" class="btn-submit">Submit</button>
+      <a class="btn-cancel" href="/profile">Cancel</a>
+    </div>
+  </form>
+  
+
+</div>
+
+{% endblock %}

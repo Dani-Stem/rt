@@ -1,0 +1,118 @@
+{% extends "base.html" %} {% block title %}Playlists - RealTop{% endblock %} {%
+block content_main_class %}gradient-container{% endblock %} {% block
+content_main %}
+<input class="modal-toggle" id="create-playlist-modal" type="checkbox" />
+
+<div class="card-head" style="margin-bottom: 10px">
+  <span class="card-head-left">
+    <p class="title_search" style="margin: 0">Playlists</p>
+  </span>
+  {% if current_user.is_authenticated %}
+  <label class="btn-nav modal-trigger pill-action" for="create-playlist-modal">
+    Create
+  </label>
+  {% endif %}
+</div>
+
+{% if current_user.is_authenticated %}
+<div class="activity-tabs" style="margin-top: 0">
+  <a
+    class="activity-tab {% if not active_tab or active_tab == 'my' %}is-active{% endif %}"
+    href="/playlists?tab=my{% if pagination %}&per_page={{ pagination.per_page }}{% endif %}"
+    >My</a
+  >
+  <a
+    class="activity-tab {% if active_tab == 'following' %}is-active{% endif %}"
+    href="/playlists?tab=following{% if pagination %}&per_page={{ pagination.per_page }}{% endif %}"
+    >Following</a
+  >
+</div>
+{% endif %} {% if not current_user.is_authenticated %}
+<p class="auth-hint" style="margin-top: 0">Log in to view your playlists.</p>
+{% endif %} {% if playlists %}
+<ul class="rating-list">
+  {% for pl in playlists %}
+  <li onclick="window.location='/playlists/{{ pl[0] }}'">
+    <span class="rating-item-text">
+      <strong>{{ pl[2] }}</strong>
+      {% if pl[3] %} : {{ pl[3] }} {% endif %}
+      <br />
+      <small>
+        by <a class="btn-nav pill-action playlist-user-pill" href="/user/{{ pl[1] }}">@{{ pl[1] }}</a>
+      </small>
+    </span>
+
+    {% if current_user.is_authenticated and current_user.username and pl[1] and
+    (current_user.username|lower == pl[1]|lower) %}
+    <form
+      method="POST"
+      action="/playlists/{{ pl[0] }}/delete"
+      class="playlist-delete-form"
+      onclick="event.stopPropagation()"
+      onsubmit="
+        event.preventDefault();
+        event.stopPropagation();
+        if (confirm('Delete this playlist?')) {
+          this.submit();
+        }
+      "
+    >
+      <button
+        type="submit"
+        class="bulletin-delete"
+        aria-label="Delete playlist"
+        title="Delete playlist"
+        onclick="event.stopPropagation()"
+      >
+        ×
+      </button>
+    </form>
+    {% endif %}
+  </li>
+  {% endfor %}
+</ul>
+{% include "_pagination.html" %} {% else %} {% if current_user.is_authenticated
+and active_tab == 'following' %}
+<p class="auth-hint">No playlists from people you follow yet.</p>
+{% else %}
+<p class="auth-hint">No playlists yet.</p>
+{% endif %} {% endif %}
+
+<div class="modal">
+  <label class="modal-backdrop" for="create-playlist-modal"></label>
+  <div class="modal-card" role="dialog" aria-modal="true">
+    <div class="modal-head">
+      <p class="modal-title">Create Playlist</p>
+      <label class="modal-close" for="create-playlist-modal" aria-label="Close"
+        >×</label
+      >
+    </div>
+    {% if current_user.is_authenticated %}
+    <form action="/playlists/create" method="post" class="rating-form">
+      <div class="form-field">
+        <label for="pl_title">Title</label>
+        <input type="text" id="pl_title" name="title" maxlength="50" required />
+      </div>
+      <div class="form-field">
+        <label for="pl_desc">Description</label>
+        <input type="text" id="pl_desc" name="description" maxlength="50" />
+      </div>
+      <div class="modal-actions">
+        <button class="btn-nav" type="submit">Create</button>
+        <label class="btn-nav modal-secondary" for="create-playlist-modal"
+          >Cancel</label
+        >
+      </div>
+    </form>
+    {% else %}
+    <p class="auth-hint">Log in to create playlists.</p>
+    <div class="modal-actions">
+      <label class="btn-nav modal-secondary" for="create-playlist-modal"
+        >Cancel</label
+      >
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+{% endblock %}

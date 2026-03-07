@@ -14,7 +14,7 @@
       document.documentElement.dataset.theme = theme;
     })();
   </script>
-  <link rel="stylesheet" href="/static/style.css?v=5" />
+  <link rel="stylesheet" href="/static/style.css?v=10" />
 </head>
 
 <body>
@@ -25,53 +25,168 @@
       </p>
       <navbar>
         <input class="nav-toggle" type="checkbox" id="nav-toggle" aria-label="Toggle navigation" />
-        <label class="nav-toggle-label" for="nav-toggle">
+        <label class="nav-toggle-label" for="nav-toggle" aria-label="Open menu" title="Menu">
           <span></span>
           <span></span>
           <span></span>
         </label>
         <div class="nav-panel">
-          <div class="nav-links">
-            <a href="/" class="btn-nav">HOME</a>
-            <a href="/browse" class="btn-nav">BROWSE</a>
-            <a href="/favorites" class="btn-nav">FAVORITES</a>
-            <a href="/playlists" class="btn-nav">PLAYLISTS</a>
-            <a href="/charts" class="btn-nav">CHARTS</a>
-          </div>
+          <div class="nav-auth-card{% if current_user.is_authenticated %} is-auth{% endif %}">
+            <p class="title_login">
+              {% if current_user.is_authenticated %}
+              <span class="user-summary">
+                <span class="login-avatar">
+                  {% if current_user.profile_pic %}
+                  <img class="avatar" src="{{ current_user.profile_pic }}" alt="Avatar" />
+                  {% else %}
+                  <span class="avatar-initial">{{ current_user.username[0]|upper }}</span>
+                  {% endif %}
+                </span>
+                <span class="user-name">{{ current_user.username }}</span>
+              </span>
+              {% else %} {% if login %}
+              <span class="title_text">CREATE AN ACCOUNT</span>
+              {% else %}
+              <span class="title_text">LOGIN</span>
+              {% endif %} {% endif %}
+            </p>
 
-          <div class="nav-actions">
-            <button type="button" class="btn-nav btn-icon nav-theme-toggle" id="theme-toggle"
-              aria-label="Toggle dark mode" aria-pressed="false" title="Toggle theme">
-              <svg class="theme-icon icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                aria-hidden="true">
-                <path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79Z" />
-              </svg>
-              <svg class="theme-icon icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
-                stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                aria-hidden="true">
-                <circle cx="12" cy="12" r="4" />
-                <path d="M12 2v2" />
-                <path d="M12 20v2" />
-                <path d="M4.93 4.93l1.41 1.41" />
-                <path d="M17.66 17.66l1.41 1.41" />
-                <path d="M2 12h2" />
-                <path d="M20 12h2" />
-                <path d="M6.34 17.66l-1.41 1.41" />
-                <path d="M19.07 4.93l-1.41 1.41" />
-              </svg>
-            </button>
+            {% if current_user.is_authenticated %}
+            <a href="" class="btn-primary">INVITE</a>
+            {% if request.path != '/profile' %}
+            <a href="/profile" class="btn-primary">VIEW PROFILE</a>
+            {% else %}
+            <a href="/profile-edit" class="btn-primary">EDIT PROFILE</a>
+            {% endif %}
+            <a href="/logout" class="btn-primary btn-secondary">LOG OUT</a>
+            {% else %} {% if login %}
+            <form action="/signup" method="post" class="signup-form">
+              <input type="hidden" name="next" value="{{ next or '' }}" />
+              <div class="form-group">
+                <label for="nav_username">Username:</label>
+                <input type="text" id="nav_username" name="username" required />
+              </div>
 
-            <form class="nav-search" action="/search" method="get">
-              <input class="nav-search-input" type="search" name="q" placeholder="Search..." aria-label="Search"
-                value="{{ request.args.get('q', '') }}" />
+              <div class="form-group">
+                <label for="nav_email">Email:</label>
+                <input type="email" id="nav_email" name="email" required />
+              </div>
+
+              <div class="form-group">
+                <label for="nav_password">Password:</label>
+                <input type="password" id="nav_password" name="password" required />
+              </div>
+
+              <div class="form-group">
+                <label for="nav_confirm_password">Confirm Password:</label>
+                <input type="password" id="nav_confirm_password" name="confirm_password" required />
+              </div>
+
+              <button type="submit" class="btn-primary">Sign Up</button>
+
+              <p class="form-footer">
+                Already have an account? <a href="/auth/login">Log in</a>
+              </p>
             </form>
+            {% else %}
+            <form action="/login" method="post" class="signup-form">
+              <input type="hidden" name="next" value="{{ next or '' }}" />
+              <div class="form-group">
+                <label for="nav_login_username">USERNAME OR EMAIL:</label>
+                <input type="text" id="nav_login_username" name="username" required />
+              </div>
+
+              <div class="form-group">
+                <label for="nav_login_password">PASSWORD:</label>
+                <input type="password" id="nav_login_password" name="password" required />
+              </div>
+
+              <button type="submit" class="btn-primary">LOG IN</button>
+
+              <p class="form-footer">
+                DONT HAVE AN ACCOUNT? <a href="/auth/signup">SIGN UP</a>
+              </p>
+            </form>
+            {% endif %} {% endif %}
           </div>
+        </div>
+
+        <div class="nav-links">
+          <a href="/" class="btn-nav">HOME</a>
+          <a href="/browse" class="btn-nav">BROWSE</a>
+          <a href="/favorites" class="btn-nav">FAVORITES</a>
+          <a href="/playlists" class="btn-nav">PLAYLISTS</a>
+          <a href="/users" class="btn-nav">USERS</a>
+          <a href="/charts" class="btn-nav">CHARTS</a>
+        </div>
+
+        <div class="nav-actions">
+          <button type="button" class="btn-nav btn-icon nav-theme-toggle" aria-label="Toggle dark mode"
+            aria-pressed="false" title="Toggle theme">
+            <svg class="theme-icon icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79Z" />
+            </svg>
+            <svg class="theme-icon icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="4" />
+              <path d="M12 2v2" />
+              <path d="M12 20v2" />
+              <path d="M4.93 4.93l1.41 1.41" />
+              <path d="M17.66 17.66l1.41 1.41" />
+              <path d="M2 12h2" />
+              <path d="M20 12h2" />
+              <path d="M6.34 17.66l-1.41 1.41" />
+              <path d="M19.07 4.93l-1.41 1.41" />
+            </svg>
+          </button>
+
+          <form class="nav-search" action="/search" method="get">
+            <input class="nav-search-input" type="search" name="q" placeholder="Search..." aria-label="Search"
+              value="{{ request.args.get('q', '') }}" />
+          </form>
         </div>
       </navbar>
     </div>
 
     <div class="menu-wrap">
+      <div class="nav-card">
+        <div class="nav-card-body">
+          <form class="nav-card-search" action="/search" method="get">
+            <input class="nav-search-input" type="search" name="q" placeholder="Search..." aria-label="Search"
+              value="{{ request.args.get('q', '') }}" />
+          </form>
+
+          <div class="nav-card-links">
+            <a href="/" class="btn-nav">HOME</a>
+            <a href="/browse" class="btn-nav">BROWSE</a>
+            <a href="/favorites" class="btn-nav">FAVORITES</a>
+            <a href="/playlists" class="btn-nav">PLAYLISTS</a>
+            <a href="/users" class="btn-nav">USERS</a>
+            <a href="/charts" class="btn-nav">CHARTS</a>
+          </div>
+
+          <button type="button" class="btn-nav btn-icon nav-theme-toggle" aria-label="Toggle dark mode"
+            aria-pressed="false" title="Toggle theme">
+            <svg class="theme-icon icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 12.79A9 9 0 1 1 11.21 3a7 7 0 0 0 9.79 9.79Z" />
+            </svg>
+            <svg class="theme-icon icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="4" />
+              <path d="M12 2v2" />
+              <path d="M12 20v2" />
+              <path d="M4.93 4.93l1.41 1.41" />
+              <path d="M17.66 17.66l1.41 1.41" />
+              <path d="M2 12h2" />
+              <path d="M20 12h2" />
+              <path d="M6.34 17.66l-1.41 1.41" />
+              <path d="M19.07 4.93l-1.41 1.41" />
+            </svg>
+          </button>
+        </div>
+      </div>
       <div class="menu{% if current_user.is_authenticated %} is-auth{% endif %}">
         <div class="signup-container{% if current_user.is_authenticated %} is-auth{% endif %}">
           <p class="title_login">
@@ -152,27 +267,25 @@
           {% endif %} {% endif %}
         </div>
       </div>
+
       {% if current_user.is_authenticated %}
-      <input class="modal-toggle" id="bulletin-add-toggle" type="checkbox" />
-      <div class="bulletin-card">
-        <div class="bulletin-header">          
-          <label class="btn-nav modal-trigger bulletin-add" for="bulletin-add-toggle">
-            ADD
-          </label>
+      <div class="bulletin-card bulletin-card-desktop">
+        <div class="bulletin-header">
           <p class="title_search">BULLETIN</p>
-          <!-- {% if bulletin_count %}
+          {% if bulletin_count %}
           <span class="sidebar-count sidebar-count-corner" aria-label="{{ bulletin_count }} bulletin posts">
             {{ bulletin_count }}
           </span>
-          {% endif %} -->
-
+          {% endif %}
+          <label class="btn-nav modal-trigger bulletin-add" for="bulletin-add-toggle">
+            ADD
+          </label>
         </div>
         <div class="sidebar-collapsible sidebar-static">
           <ul class="sidebar-list">
             {% for post in bulletins[:5] %}
             <li class="sidebar-item">
-              <div class="bulletin-summary bulletin-link" role="link" tabindex="0"
-                onclick="window.location='/bulletin/{{ post.bulletin_key }}'"
+              <div class="bulletin-link" role="link" tabindex="0" onclick="window.location='/bulletin/{{ post.bulletin_key }}'"
                 onkeydown="if (event.key === 'Enter') { window.location='/bulletin/{{ post.bulletin_key }}'; }">
                 {% set t = (post.type or 'praise')|lower|trim %} {% set
                 flair_map = { 'poll': 'flair-poll', 'praise': 'flair-praise',
@@ -181,32 +294,37 @@
                 'flair-rating-highlight', 'rating challenge':
                 'flair-rating-challenge' } %} {% set flair = flair_map.get(t,
                 'flair-praise') %}
-                <span class="bulletin-summary-left">
-                  <span class="bulletin-type {{ flair }}">{{ t }}</span>
+                <div class="bulletin-summary">
+                  <span class="bulletin-summary-left">
+                    <span class="bulletin-type {{ flair }}" title="{{ t }}" aria-label="{{ t }}">{{ t }}</span>
+                  </span>
+                  
                   <span class="bulletin-by">@{{ post.created_by }}</span>
-                </span>
 
-                <span class="bulletin-summary-right">
-                  {% if post.time_ago %}
-                  <span class="sidebar-meta">{{ post.time_ago }}</span>
-                  {% endif %} {% if current_user.is_authenticated and
-                  post.created_by_user_id == current_user.id %}
-                  <form method="post" action="/bulletin/{{ post.bulletin_key }}/delete" class="bulletin-delete-form"
-                    onsubmit="
-                        event.preventDefault();
-                        event.stopPropagation();
-                        if (confirm('Delete this post?')) {
-                          this.submit();
-                        }
-                      ">
-                    <input type="hidden" name="next" value="{{ request.path }}" />
-                    <button type="submit" class="bulletin-delete" aria-label="Delete bulletin post" title="Delete"
-                      onclick="event.stopPropagation()">
-                      ×
-                    </button>
-                  </form>
-                  {% endif %}
-                </span>
+                  <span class="bulletin-summary-right">
+                    {% if post.time_ago %}
+                    <span class="sidebar-meta">{{ post.time_ago }}</span>
+                    {% endif %} {% if current_user.is_authenticated and
+                    post.created_by_user_id == current_user.id %}
+                    <form method="post" action="/bulletin/{{ post.bulletin_key }}/delete" class="bulletin-delete-form" onsubmit="
+                          event.preventDefault();
+                          event.stopPropagation();
+                          if (confirm('Delete this post?')) {
+                            this.submit();
+                          }
+                        ">
+                      <input type="hidden" name="next" value="{{ request.path }}" />
+                      <button type="submit" class="bulletin-delete" aria-label="Delete bulletin post" title="Delete"
+                        onclick="event.stopPropagation()">
+                        ×
+                      </button>
+                    </form>
+                    {% endif %}
+                  </span>
+                </div>
+                {% if post.title %}
+                <div class="bulletin-title" title="{{ post.title }}">{{ post.title }}</div>
+                {% endif %}
               </div>
             </li>
             {% else %}
@@ -218,52 +336,121 @@
           <a class="bulletin-viewall" href="/bulletin">View all</a>
         </div>
       </div>
-      <div class="modal">
-        <label class="modal-backdrop" for="bulletin-add-toggle"></label>
-        <form class="modal-card" role="dialog" aria-modal="true" method="post" action="/bulletin">
-          <input type="hidden" name="next" value="{{ request.path }}" />
-          <div class="modal-head">
-            <p class="modal-title">Post to Bulletin</p>
-            <label class="modal-close" for="bulletin-add-toggle" aria-label="Close">
-              ×
-            </label>
-          </div>
-          <div class="form-group">
-            <label for="bulletin-type">Type</label>
-            <select id="bulletin-type" name="type" required>
-              <option value="" disabled selected>Select type</option>
-              <option value="poll">poll</option>
-              <option value="praise">praise</option>
-              <option value="critique">critique</option>
-              <option value="show &amp; tell">show &amp; tell</option>
-              <option value="rating highlight">rating highlight</option>
-              <option value="rating challenge">rating challenge</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label for="bulletin-title">Title</label>
-            <textarea id="bulletin-title" name="title" rows="1" placeholder="Write something..."
-              required></textarea>
-          </div>
-          <div class="form-group">
-            <label for="bulletin-message">Message</label>
-            <textarea id="bulletin-message" name="message" rows="3" placeholder="Write something..."
-              required></textarea>
-          </div>
-          <div class="modal-actions">
-            <button type="submit" class="btn-nav">Post</button>
-            <label class="btn-nav modal-secondary" for="bulletin-add-toggle">
-              Cancel
-            </label>
-          </div>
-        </form>
-      </div>
       {% endif %}
     </div>
 
     <div class="content">
       <div class="content_left">
         {% if current_user.is_authenticated %}
+        <input class="modal-toggle" id="bulletin-add-toggle" type="checkbox" />
+        <div class="bulletin-card bulletin-card-mobile">
+          <div class="bulletin-header">
+            <p class="title_search">BULLETIN</p>
+            {% if bulletin_count %}
+            <span class="sidebar-count sidebar-count-corner" aria-label="{{ bulletin_count }} bulletin posts">
+              {{ bulletin_count }}
+            </span>
+            {% endif %}
+            <label class="btn-nav modal-trigger bulletin-add" for="bulletin-add-toggle">
+              ADD
+            </label>
+          </div>
+          <div class="sidebar-collapsible sidebar-static">
+            <ul class="sidebar-list">
+              {% for post in bulletins[:5] %}
+              <li class="sidebar-item">
+                <div class="bulletin-link" role="link" tabindex="0"
+                  onclick="window.location='/bulletin/{{ post.bulletin_key }}'"
+                  onkeydown="if (event.key === 'Enter') { window.location='/bulletin/{{ post.bulletin_key }}'; }">
+                  {% set t = (post.type or 'praise')|lower|trim %} {% set
+                  flair_map = { 'poll': 'flair-poll', 'praise': 'flair-praise',
+                  'critique': 'flair-critique', 'show & tell':
+                  'flair-show-tell', 'rating highlight':
+                  'flair-rating-highlight', 'rating challenge':
+                  'flair-rating-challenge' } %} {% set flair = flair_map.get(t,
+                  'flair-praise') %}
+                  <div class="bulletin-summary">
+                    <span class="bulletin-summary-left">
+                      <span class="bulletin-type {{ flair }}" title="{{ t }}" aria-label="{{ t }}">{{ t }}</span>
+                      <span class="bulletin-by">@{{ post.created_by }}</span>
+                    </span>
+
+                    <span class="bulletin-summary-right">
+                      {% if post.time_ago %}
+                      <span class="sidebar-meta">{{ post.time_ago }}</span>
+                      {% endif %} {% if current_user.is_authenticated and
+                      post.created_by_user_id == current_user.id %}
+                      <form method="post" action="/bulletin/{{ post.bulletin_key }}/delete" class="bulletin-delete-form"
+                        onsubmit="
+                            event.preventDefault();
+                            event.stopPropagation();
+                            if (confirm('Delete this post?')) {
+                              this.submit();
+                            }
+                          ">
+                        <input type="hidden" name="next" value="{{ request.path }}" />
+                        <button type="submit" class="bulletin-delete" aria-label="Delete bulletin post" title="Delete"
+                          onclick="event.stopPropagation()">
+                          ×
+                        </button>
+                      </form>
+                      {% endif %}
+                    </span>
+                  </div>
+                  {% if post.title %}
+                  <div class="bulletin-title" title="{{ post.title }}">{{ post.title }}</div>
+                  {% endif %}
+                </div>
+              </li>
+              {% else %}
+              <li class="sidebar-item">No bulletin posts yet.</li>
+              {% endfor %}
+            </ul>
+          </div>
+          <div class="sidebar-viewall-row">
+            <a class="bulletin-viewall" href="/bulletin">View all</a>
+          </div>
+        </div>
+        <div class="modal">
+          <label class="modal-backdrop" for="bulletin-add-toggle"></label>
+          <form class="modal-card" role="dialog" aria-modal="true" method="post" action="/bulletin">
+            <input type="hidden" name="next" value="{{ request.path }}" />
+            <div class="modal-head">
+              <p class="modal-title">Post to Bulletin</p>
+              <label class="modal-close" for="bulletin-add-toggle" aria-label="Close">
+                ×
+              </label>
+            </div>
+            <div class="form-group">
+              <label for="bulletin-type">Type</label>
+              <select id="bulletin-type" name="type" required>
+                <option value="" disabled selected>Select type</option>
+                <option value="poll">poll</option>
+                <option value="praise">praise</option>
+                <option value="critique">critique</option>
+                <option value="show &amp; tell">show &amp; tell</option>
+                <option value="rating highlight">rating highlight</option>
+                <option value="rating challenge">rating challenge</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="bulletin-title">Title (optional)</label>
+              <input id="bulletin-title" name="title" type="text" maxlength="80" placeholder="Add a title..." />
+            </div>
+            <div class="form-group">
+              <label for="bulletin-message">Message</label>
+              <textarea id="bulletin-message" name="message" rows="3" placeholder="Write something..."
+                required></textarea>
+            </div>
+            <div class="modal-actions">
+              <button type="submit" class="btn-nav">Post</button>
+              <label class="btn-nav modal-secondary" for="bulletin-add-toggle">
+                Cancel
+              </label>
+            </div>
+          </form>
+        </div>
+
         <div class="signup-container">
           <div class="alerts-header">
             <p class="title_search">ALERTS</p>
@@ -326,7 +513,7 @@
               {% for item in activities[:5] %}
               <li class="sidebar-item activity-item{% if item.action %} action-{{ item.action }}{% endif %}">
                 {% if item.url %}
-                <a class="sidebar-link" href="{{ item.url }}">
+                <a class="sidebar-link btn-nav pill-action activity-pill-link" href="{{ item.url }}">
                   {% if item.text %} {% set tokens = item.text.split(' ') %}
                   {% for tok in tokens %} {% if loop.index0 > 0 %} {% endif %}
                   {% if tok.startswith('@') %}
@@ -374,24 +561,26 @@
   <script>
     const applyTheme = (theme) => {
       document.documentElement.dataset.theme = theme;
-      const btn = document.getElementById('theme-toggle');
-      if (btn) {
+      const btns = document.querySelectorAll('.nav-theme-toggle');
+      btns.forEach((btn) => {
         btn.setAttribute('aria-pressed', theme === 'dark' ? 'true' : 'false');
         btn.setAttribute(
           'aria-label',
           theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode',
         );
-      }
+      });
     };
 
-    const themeToggle = document.getElementById('theme-toggle');
-    if (themeToggle) {
+    const themeToggles = document.querySelectorAll('.nav-theme-toggle');
+    if (themeToggles.length) {
       applyTheme(document.documentElement.dataset.theme || 'light');
-      themeToggle.addEventListener('click', () => {
-        const current = document.documentElement.dataset.theme || 'light';
-        const next = current === 'dark' ? 'light' : 'dark';
-        localStorage.setItem('realtop-theme', next);
-        applyTheme(next);
+      themeToggles.forEach((themeToggle) => {
+        themeToggle.addEventListener('click', () => {
+          const current = document.documentElement.dataset.theme || 'light';
+          const next = current === 'dark' ? 'light' : 'dark';
+          localStorage.setItem('realtop-theme', next);
+          applyTheme(next);
+        });
       });
     }
 

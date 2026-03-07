@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Also Rated - RealTop{% endblock %}
+{% block content_main_class %}gradient-container{% endblock %}
+{% block content_main %}
+  <div class="page-head">
+    <div class="page-head-left">
+      <p class="title_search">Also rated</p>
+      <p style="margin: 4px 0 0 0; color: var(--subtle);">
+        {{ subject.type }} • {{ subject.name }}{% if subject.artist %} • {{ subject.artist }}{% endif %}
+      </p>
+    </div>
+  </div>
+
+  <div class="rating-form" style="margin-top: 12px;">
+    {% if total_count %}
+      <p style="margin: 0 0 10px 0; color: var(--subtle);">
+        {{ total_count }}{% if rating_key %} other{% endif %} user{{ '' if total_count == 1 else 's' }} rated this.
+      </p>
+    {% endif %}
+
+    {% if users %}
+      <div style="display:grid; gap:10px;">
+        {% for u in users %}
+          <a href="/rating/{{ u.rating_key }}" class="btn-nav" style="
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap:12px;
+            padding:12px;
+            border:1px solid var(--border);
+            border-radius:14px;
+            background: color-mix(in srgb, var(--surface) 88%, transparent);
+            text-decoration:none;
+          ">
+            <span style="display:flex; align-items:center; gap:10px; min-width:0;">
+              <span class="login-avatar">
+                {% if u.profile_pic %}
+                  <img class="avatar" src="{{ u.profile_pic }}" alt="{{ u.username }} avatar" />
+                {% else %}
+                  <span class="avatar-initial">{{ u.username[0]|upper }}</span>
+                {% endif %}
+              </span>
+              <span style="min-width:0; overflow-wrap:anywhere; word-break:break-word; font-weight:900; color: var(--ink);">
+                @{{ u.username }}
+              </span>
+            </span>
+            <span style="color: var(--subtle); white-space:nowrap;">View rating</span>
+          </a>
+        {% endfor %}
+      </div>
+
+      {% if pagination %}
+        {% include "_pagination.html" %}
+      {% endif %}
+    {% else %}
+      <p style="margin: 0; color: var(--subtle);">No other ratings yet.</p>
+    {% endif %}
+  </div>
+{% endblock %}
+

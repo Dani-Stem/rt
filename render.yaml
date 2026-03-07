@@ -1,0 +1,32 @@
+services:
+  - type: web
+    name: rt-main
+    env: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:app --bind 0.0.0.0:$PORT --workers 2 --threads 4 --timeout 120
+
+    # Persistent storage for SQLite + uploaded files
+    disk:
+      name: data
+      mountPath: /var/data
+      sizeGB: 1
+
+    envVars:
+      # Render will generate a random value at deploy time.
+      - key: SECRET_KEY
+        generateValue: true
+
+      # SQLite database location (stored on the disk above)
+      - key: DB_PATH
+        value: /var/data/db.sqlite3
+
+      # User-uploaded images (stored on the disk above)
+      - key: UPLOAD_FOLDER
+        value: /var/data/uploads
+      - key: UPLOAD_URL_PREFIX
+        value: /uploads
+
+      - key: PYTHONUNBUFFERED
+        value: "1"
+

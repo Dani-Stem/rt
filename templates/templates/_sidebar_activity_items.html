@@ -1,0 +1,42 @@
+{% for item in activities[:5] %}
+<li class="sidebar-item activity-item{% if item.action %} action-{{ item.action }}{% endif %}">
+  {% if item.url %}
+  <a class="sidebar-link btn-nav pill-action activity-pill-link" href="{{ item.url }}">
+    {% if item.text %}
+    {% set tokens = item.text.split(' ') %}
+    {% for tok in tokens %}
+    {% if loop.index0 > 0 %}{% endif %}
+    {% if tok.startswith('@') %}
+    <span class="alert-username{% if not loop.first %} is-secondary{% endif %}">
+      <span class="pill-text">{{ tok }}</span>
+    </span>
+    {% else %}
+    {% if loop.index0 == 1 %}
+    <span class="activity-verb">{{ tok }}</span>
+    {% else %} {{ tok }} {% endif %}
+    {% endif %}
+    {% endfor %}
+    {% endif %}
+  </a>
+  {% else %}
+  {% if item.text %}
+  {% set tokens = item.text.split(' ') %}
+  {% for tok in tokens %}
+  {% if loop.index0 > 0 %}{% endif %}
+  {% if tok.startswith('@') %}
+  <span class="alert-username{% if not loop.first %} is-secondary{% endif %}">
+    <span class="pill-text">{{ tok }}</span>
+  </span>
+  {% else %}
+  {% if loop.index0 == 1 %}
+  <span class="activity-verb">{{ tok }}</span>
+  {% else %} {{ tok }} {% endif %}
+  {% endif %}
+  {% endfor %}
+  {% endif %}
+  {% endif %}
+</li>
+{% else %}
+<li class="sidebar-item">No activity yet.</li>
+{% endfor %}
+

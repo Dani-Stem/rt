@@ -195,7 +195,7 @@ content_main %} {% with messages = get_flashed_messages(with_categories=true) %}
           {% for rating in profile_ratings[:3] %}
           <li onclick="window.location='/rating/{{ rating[0] }}'">
             {% set pct = profile_percent_map.get(rating[0]) if profile_percent_map
-            else None %} {% if pct %}
+            else None %} {% if pct is not none %}
             <span class="rating-percent" aria-hidden="true">{{ pct }}%</span>
             {% endif %}
             <span class="rating-item-left">
@@ -249,7 +249,7 @@ content_main %} {% with messages = get_flashed_messages(with_categories=true) %}
               {% for rating in profile_ratings %}
               <li onclick="window.location='/rating/{{ rating[0] }}'">
                 {% set pct = profile_percent_map.get(rating[0]) if
-                profile_percent_map else None %} {% if pct %}
+                profile_percent_map else None %} {% if pct is not none %}
                 <span class="rating-percent" aria-hidden="true">{{ pct }}%</span>
                 {% endif %}
                 <span class="rating-item-left">
@@ -386,7 +386,7 @@ content_main %} {% with messages = get_flashed_messages(with_categories=true) %}
           {% for rating in favorite_ratings[:3] %}
           <li onclick="window.location='/rating/{{ rating[0] }}'">
             {% set pct = favorite_percent_map.get(rating[0]) if
-            favorite_percent_map else None %} {% if pct %}
+            favorite_percent_map else None %} {% if pct is not none %}
             <span class="rating-percent" aria-hidden="true">{{ pct }}%</span>
             {% endif %}
             <span class="rating-item-left">
@@ -443,7 +443,7 @@ content_main %} {% with messages = get_flashed_messages(with_categories=true) %}
               {% for rating in favorite_ratings %}
               <li onclick="window.location='/rating/{{ rating[0] }}'">
                 {% set pct = favorite_percent_map.get(rating[0]) if
-                favorite_percent_map else None %} {% if pct %}
+                favorite_percent_map else None %} {% if pct is not none %}
                 <span class="rating-percent" aria-hidden="true">{{ pct }}%</span>
                 {% endif %}
                 <span class="rating-item-left">

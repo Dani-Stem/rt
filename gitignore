@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+
+.DS_Store
+
+.venv/
+venv/
+
+# db.sqlite3
+#static/uploads/

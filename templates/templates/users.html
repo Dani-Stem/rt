@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Users - RealTop{% endblock %}
+{% block content_main_class %}gradient-container{% endblock %}
+{% block content_main %}
+<div class="page-head">
+  <p class="title_search">Users</p>
+  <div class="page-head-right">
+    <form method="GET" action="/users" class="order-form">
+      {% if pagination %}
+      <input type="hidden" name="per_page" value="{{ pagination.per_page }}" />
+      {% endif %}
+      <label class="sr-only" for="order-users">Order</label>
+      <select id="order-users" name="order" onchange="this.form.submit()">
+        <option value="newest" {{ 'selected' if active_order == 'newest' else '' }}>Newest</option>
+        <option value="oldest" {{ 'selected' if active_order == 'oldest' else '' }}>Oldest</option>
+        <option value="cred_high" {{ 'selected' if active_order == 'cred_high' else '' }}>Cred (high)</option>
+        <option value="cred_low" {{ 'selected' if active_order == 'cred_low' else '' }}>Cred (low)</option>
+        <option value="az" {{ 'selected' if active_order == 'az' else '' }}>A–Z</option>
+        <option value="za" {{ 'selected' if active_order == 'za' else '' }}>Z–A</option>
+      </select>
+    </form>
+  </div>
+</div>
+
+<div class="profile-card" style="margin-top: 12px">
+  {% if items %}
+  <ul class="follow-list">
+    {% for user in items %}
+    <li class="follow-item">
+      <a class="follow-user-link" href="/user/{{ user.username }}">
+        {% if user.profile_pic %}
+        <img class="avatar" src="{{ user.profile_pic }}" alt="Avatar" />
+        {% else %}
+        <span class="avatar-initial">{{ user.username[0]|upper }}</span>
+        {% endif %}
+        <span class="follow-username">@{{ user.username }}</span>
+        {% if user.cred is not none %}
+        <span style="margin-left: auto; opacity: 0.75; font-weight: 900">CRED: {{ user.cred }}</span>
+        {% endif %}
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="auth-hint">No users yet.</p>
+  {% endif %}
+</div>
+
+{% include "_pagination.html" %}
+{% endblock %}
+

@@ -1,0 +1,181 @@
+{% extends "base.html" %} {% block title %}Playlist - RealTop{% endblock %} {%
+block content_main_class %}gradient-container{% endblock %} {% block
+content_main %}
+<div class="page-head">
+  <p class="title_search">Playlist</p>
+</div>
+
+<div class="profile-card playlist-detail-card">
+  <div class="playlist-detail-top">
+    <div class="playlist-detail-text">
+      <h1 class="playlist-detail-title">{{ playlist[2] }}</h1>
+
+      <p class="playlist-detail-meta">
+        by
+        <a class="btn-nav pill-action playlist-user-pill" href="/user/{{ playlist[1] }}"
+          >@{{ playlist[1] }}</a
+        >
+      </p>
+    </div>
+
+    {% if current_user.is_authenticated %}
+    <div class="playlist-detail-actions">
+      <form method="POST" action="/playlists/{{ playlist[0] }}/favorite">
+        <button
+          type="submit"
+          class="heart-btn {% if is_favorited %}is-liked{% endif %}"
+          aria-label="{% if is_favorited %}Unfavorite playlist{% else %}Favorite playlist{% endif %}"
+          title="{% if is_favorited %}Unfavorite{% else %}Favorite{% endif %}"
+        >
+          {% if is_favorited %}
+          <span class="heart-icon" aria-hidden="true">♥</span>
+          {% else %}
+          <span class="heart-icon" aria-hidden="true">♡</span>
+          {% endif %}
+        </button>
+      </form>
+    </div>
+    {% endif %}
+  </div>
+
+  {% if playlist[3] %}
+  <p class="playlist-detail-desc">{{ playlist[3] }}</p>
+  {% endif %}
+</div>
+
+{% if can_edit %}
+<input class="modal-toggle" id="playlist-add-song-toggle" type="checkbox" />
+<div class="modal">
+  <label class="modal-backdrop" for="playlist-add-song-toggle"></label>
+  <div class="modal-card" role="dialog" aria-modal="true">
+    <div class="modal-head">
+      <p class="modal-title">Add Song</p>
+      <label
+        class="modal-close"
+        for="playlist-add-song-toggle"
+        aria-label="Close"
+        >×</label
+      >
+    </div>
+
+    <form
+      action="/playlists/{{ playlist[0] }}/songs/new"
+      method="post"
+      class="rating-form"
+    >
+      <div class="form-field">
+        <label for="new_song_title">Song title</label>
+        <input
+          type="text"
+          id="new_song_title"
+          name="title"
+          maxlength="50"
+          required
+        />
+      </div>
+      <div class="form-field">
+        <label for="new_song_artist">Artist (optional)</label>
+        <input
+          type="text"
+          id="new_song_artist"
+          name="artist_name"
+          maxlength="50"
+        />
+      </div>
+
+      <div class="form-field">
+        <label for="new_song_link">Song link (optional)</label>
+        <input
+          type="url"
+          id="new_song_link"
+          name="song_link"
+          placeholder="https://..."
+        />
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn-nav" type="submit">Add song</button>
+        <label class="btn-nav modal-secondary" for="playlist-add-song-toggle"
+          >Close</label
+        >
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+<div class="profile-card playlist-songs-card" style="margin-top: 12px">
+  <div class="card-head playlist-songs-head">
+    <span class="card-head-left playlist-songs-title">
+      <span class="profile-label">Songs</span>
+    </span>
+
+    {% if can_edit %}
+    <label
+      class="btn-nav pill-action modal-trigger playlist-songs-add"
+      for="playlist-add-song-toggle"
+      >Add song</label
+    >
+    {% endif %}
+
+    <span class="rating-count playlist-songs-count" aria-label="Total songs"
+      >{{ songs|length }}</span
+    >
+  </div>
+
+  {% if songs %}
+  <ul class="rating-list">
+    {% for s in songs %}
+    <li>
+      <span class="rating-item-text">
+        <strong>{{ s[1] }}</strong>
+        <br />
+        <small>
+          {% if s[2] %}{{ s[2] }}{% else %}Unknown artist{% endif %} {% if s[4]
+          %}
+          <br />
+          <a
+            class="btn-nav pill-action playlist-song-link"
+            href="{{ s[4] }}"
+            target="_blank"
+            rel="noopener noreferrer"
+            title="{{ s[4] }}"
+            >{{ s[4] }}</a
+          >
+          {% endif %}
+        </small>
+      </span>
+
+      {% if can_edit %}
+      <form
+        method="POST"
+        action="/playlists/{{ playlist[0] }}/songs/{{ s[0] }}/delete"
+        class="playlist-song-delete-form"
+        onsubmit="
+          event.preventDefault();
+          if (confirm('Remove this song from the playlist?')) {
+            this.submit();
+          }
+        "
+      >
+        <button
+          type="submit"
+          class="bulletin-delete"
+          aria-label="Remove song"
+          title="Remove song"
+        >
+          ×
+        </button>
+      </form>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+  {% else %}
+  <p class="auth-hint">No songs yet.</p>
+  {% endif %}
+</div>
+
+<div class="playlist-back-row" style="margin-top: 12px">
+  <a class="btn-nav btn-danger" href="/playlists">Back</a>
+</div>
+{% endblock %}

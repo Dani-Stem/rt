@@ -1,9 +1,19 @@
+import os
 import sqlite3
 from pathlib import Path
 
 # Configuration
 ROOT_DIR = Path(__file__).resolve().parent.parent
-DB_PATH = ROOT_DIR / "db.sqlite3"
+
+_db_path_env = (
+    os.environ.get("DB_PATH") or os.environ.get("DATABASE_PATH") or ""
+).strip()
+DB_PATH = Path(_db_path_env) if _db_path_env else (ROOT_DIR / "db.sqlite3")
+
+try:
+    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+except Exception:
+    pass
 
 
 # Connect to database
@@ -52,6 +62,8 @@ def init_db():
     )
 
     _ensure_column("ratings", "image_url", "image_url TEXT")
+    _ensure_column("ratings", "mbid", "mbid TEXT")
+    _ensure_column("ratings", "mb_url", "mb_url TEXT")
     cur.execute(
         """
         CREATE TABLE IF NOT EXISTS "album" (
@@ -185,6 +197,20 @@ def init_db():
 
     cur.execute(
         """
+        CREATE TABLE IF NOT EXISTS rating_reactions (
+        reaction_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        rating_key INTEGER NOT NULL,
+        user_id INTEGER NOT NULL,
+        category TEXT NOT NULL,
+        emoji TEXT NOT NULL,
+        created_at TEXT,
+        UNIQUE(rating_key, user_id, category, emoji)
+        )
+        """
+    )
+
+    cur.execute(
+        """
         CREATE TABLE IF NOT EXISTS rating_comments (
         comment_id INTEGER PRIMARY KEY AUTOINCREMENT,
         rating_key INTEGER NOT NULL,
@@ -206,6 +232,13 @@ def init_db():
         """
         CREATE INDEX IF NOT EXISTS idx_rating_category_votes_rating
         ON rating_category_votes (rating_key)
+        """
+    )
+
+    cur.execute(
+        """
+        CREATE INDEX IF NOT EXISTS idx_rating_reactions_rating_category
+        ON rating_reactions (rating_key, category)
         """
     )
 
@@ -302,6 +335,8 @@ def init_db():
         )
         """
     )
+
+    _ensure_column("user_info", "about", "about TEXT")
 
     cur.execute(
         """
