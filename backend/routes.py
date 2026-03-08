@@ -1368,6 +1368,7 @@ def rating_also_rated(rating_key: int):
 
 @app.route("/also-rated")
 def also_rated_subject():
+    rating_image_url = (request.args.get("image") or "").strip()
     rating_type = (request.args.get("kind") or "").strip()
     mbid = (request.args.get("mbid") or "").strip() or None
     rating_name = (request.args.get("name") or "").strip()
@@ -1407,7 +1408,8 @@ def also_rated_subject():
         subject={
             "type": rating_type,
             "name": rating_name,
-            "artist": content_artist,
+            "artist": content_artist,\
+            "image": rating_image_url
         },
         users=users,
         total_count=total,

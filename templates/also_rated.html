@@ -4,13 +4,52 @@
 {% block content_main %}
   <div class="page-head">
     <div class="page-head-left">
-      <p class="title_search">Also rated</p>
+      <p class="title_search">{{ subject.name }}</p>
       <p style="margin: 4px 0 0 0; color: var(--subtle);">
-        {{ subject.type }} • {{ subject.name }}{% if subject.artist %} • {{ subject.artist }}{% endif %}
+        {{ subject.type }} {% if subject.artist %} • {{ subject.artist }}{% endif %} {% if subject.album %} • {{ subject.album }}{% endif %}
       </p>
     </div>
   </div>
 
+  <div class="rating-form" style="margin-top: 12px;">
+
+
+    {% if rating_image_url %}
+    <div class="rating-hero">
+      <img
+        class="rating-hero-img"
+        src="{{ rating_image_url }}"
+        alt="{{ rating[2] }} cover"
+        loading="lazy"
+      />
+    </div>
+    {% endif %}
+
+    IMG GOES HERE BUT I HAVE TO FIGURE OUT HOW 
+    <br/>
+    place holder
+    <br/>
+    place holder
+    <br/>
+    place holder
+    <br/>
+    place holder
+    <br/>
+    place holder
+    <br/>
+    place holder
+    <br/>
+    place holder
+    <br/>
+    place holder
+    <br/>
+    place holder
+    </div>
+
+  <div class="rating-form" style="margin-top: 12px;">
+
+  </div>
+  
   <div class="rating-form" style="margin-top: 12px;">
     {% if total_count %}
       <p style="margin: 0 0 10px 0; color: var(--subtle);">
