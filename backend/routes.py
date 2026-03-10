@@ -715,7 +715,7 @@ def charts():
 
     page, per_page, offset = _parse_pagination(
         default_per_page=25,
-        allowed_per_page=(10, 25, 50, 100),
+        allowed_per_page=(5, 10, 25, 50, 100),
     )
 
     raw_items = get_top_rated_subjects(
@@ -756,7 +756,7 @@ def charts():
             per_page=per_page,
             has_next=has_next,
             item_count=len(items),
-            options=[10, 25, 50, 100],
+            options=[5, 10, 25, 50, 100],
         ),
     )
 
@@ -3840,8 +3840,8 @@ def _format_time_ago(iso_timestamp: str) -> str:
 
 def _parse_pagination(
     *,
-    default_per_page: int = 10,
-    allowed_per_page: tuple[int, ...] = (10, 20, 30, 50, 100),
+    default_per_page: int = 5,
+    allowed_per_page: tuple[int, ...] = (5, 10, 20, 30, 50, 100),
 ) -> tuple[int, int, int]:
 
     raw_page = (request.args.get("page") or "1").strip()
@@ -3887,13 +3887,13 @@ def _pagination_context(
     per_page: int,
     has_next: bool,
     item_count: int,
-    min_items_to_show: int = 10,
+    min_items_to_show: int = 5,
     options: list[int] | None = None,
 ):
     args = request.args.to_dict(flat=True)
 
     if options is None:
-        options = [10, 20, 30, 50, 100]
+        options = [5, 10, 20, 30, 50, 100]
 
     def _url_for_page(target_page: int) -> str:
         next_args = dict(args)
