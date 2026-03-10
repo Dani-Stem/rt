@@ -936,6 +936,22 @@ html[data-theme='dark'] .btn-nav.pill-action {
   white-space: nowrap;
 }
 
+.rating-extra-link.btn-nav.pill-action {
+  height: 22px;
+  padding: 0 0.6rem;
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  vertical-align: middle;
+  text-transform: none;
+  max-width: min(520px, 80vw);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .pagination-bar {
   margin-top: 14px;
   display: flex;
@@ -2095,7 +2111,6 @@ html[data-theme='dark'] .alerts-list .sidebar-item {
   min-width: 0;
 }
 
-/* Ensure Activity text is never forced uppercase (override any inherited rules) */
 .content_left .activity-card,
 .menu .activity-card,
 .activity-list,
@@ -3182,6 +3197,37 @@ button:hover,
   text-decoration: none;
 }
 
+.btn-submit:disabled,
+.btn-submit.is-loading {
+  opacity: 0.85;
+  cursor: wait;
+  transform: none;
+  pointer-events: none;
+}
+
+.btn-submit:disabled:hover,
+.btn-submit.is-loading:hover {
+  transform: none;
+  background: var(--btn-dark);
+}
+
+.btn-submit.is-loading::after {
+  content: '';
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  animation: btn-spin 0.8s linear infinite;
+}
+
+@keyframes btn-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 button:active,
 .btn-primary:active,
 .btn-auth:active,
@@ -3743,7 +3789,7 @@ html[data-theme='dark'] .content_main.ratings-container .avatar-wrap .avatar-ini
 .rating-summary-top .summary-main {
   width: 100%;
   min-width: 0;
-  padding-right: 52px; /* keep centered title clear of the heart button */
+  padding-right: 52px; 
 }
 
 .rating-summary-top .rating-like-row {
@@ -3794,6 +3840,27 @@ html[data-theme='dark'] .rating-summary {
   width: 100%;
 }
 
+.rating-extras {
+  width: 100%;
+  margin-top: 0.65rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.rating-extra-pill {
+  max-width: min(860px, 94vw);
+  justify-content: center;
+  flex-wrap: wrap;
+  text-align: center;
+}
+
+.rating-extra-info {
+  text-align: center;
+  max-width: min(720px, 92vw);
+}
+
 .pill {
   display: inline-flex;
   align-items: center;
@@ -3809,6 +3876,26 @@ html[data-theme='dark'] .rating-summary {
 .pill b {
   color: var(--ink);
   font-variant-numeric: tabular-nums;
+}
+
+.pill-link {
+  color: inherit;
+  text-decoration: none;
+  display: inline;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.pill-link:hover {
+  text-decoration: underline;
+}
+
+.pill-info-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  display: inline;
 }
 
 .rating-summary .pill {
@@ -4423,7 +4510,6 @@ html[data-theme='dark'] .rating-form .rating-block {
     grid-column: 1 / -1;
   }
 
-  /* Slim screens: move auth block into hamburger menu */
   .menu-wrap .menu {
     display: none;
   }
@@ -4432,7 +4518,6 @@ html[data-theme='dark'] .rating-form .rating-block {
     display: block;
   }
 
-  /* Slim screens: nav/search becomes its own panel */
   .header navbar>.nav-links,
   .header navbar>.nav-actions {
     display: none;

@@ -8,16 +8,35 @@ content_main %}
   {% endif %}
 </div>
 
-{% if rating_image_url %}
+{% set _rt = (rating[1] or '')|trim|lower %}
 <div class="rating-hero">
+  {% if rating_image_url %}
   <img
     class="rating-hero-img"
-    src="{{ rating_image_url }}"
+    src="{{ proxied_image_url(rating_image_url) }}"
     alt="{{ rating[2] }} cover"
     loading="lazy"
   />
+  {% else %}
+  <div
+    aria-hidden="true"
+    style="
+      width:100%;
+      aspect-ratio: 1 / 1;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      background: color-mix(in srgb, var(--surface) 80%, transparent);
+      color: var(--subtle);
+      font-weight: 900;
+    "
+  >
+    <span style="font-size: 72px; line-height: 1;">
+      {% if _rt == 'album' %}💿{% elif _rt == 'artist' %}👤{% else %}♪{% endif %}
+    </span>
+  </div>
+  {% endif %}
 </div>
-{% endif %}
 
 <div class="profile-card rating-detail-card">
 <div class="rating-alt">
@@ -48,12 +67,12 @@ content_main %}
               {{ rating[1] }}
             </div>
             <h2 class="title" style="margin: 0; text-align: center;">
-              <a class="subject" href="/rating/{{ rating[0] }}/also-rated" style="text-decoration:none; color: inherit;">
+              <a class="subject" href="{{ subject_all_ratings_url or ('/rating/' ~ rating[0] ~ '/also-rated') }}" style="text-decoration:none; color: inherit;">
                 {{ rating[2] }}
               </a>
               {% if subject_artist %}
               <span class="divider">•</span>
-              <a href="/rating/{{ rating[0] }}/also-rated" style="text-decoration:none; color: inherit;">
+              <a href="{{ artist_all_ratings_url or (subject_all_ratings_url or ('/rating/' ~ rating[0] ~ '/also-rated')) }}" style="text-decoration:none; color: inherit;">
                 {{ subject_artist }}
               </a>
               {% endif %}
@@ -85,7 +104,35 @@ content_main %}
       <span class="pill">Flow <b>{{ rating[7] }}</b></span>
       <span class="pill">Melody <b>{{ rating[9] }}</b></span>
       <span class="pill">Cohesive <b>{{ rating[11] }}</b></span>
+      {% if rating_emoji %}
+      <span class="pill">Emoji <b>{{ rating_emoji }}</b></span>
+      {% endif %}
     </div>
+
+    {% if extra_link or extra_info %}
+    <div class="rating-extras">
+      {% if extra_link %}
+        <span class="pill rating-extra-pill">
+          Link
+          <b>
+            <a
+              class="pill-link"
+              href="{{ extra_link }}"
+              title="{{ extra_link }}"
+              target="_blank"
+              rel="noopener noreferrer"
+            >{{ extra_link }}</a>
+          </b>
+        </span>
+      {% endif %}
+      {% if extra_info %}
+      <span class="pill rating-extra-pill rating-extra-info-pill">
+        Note
+        <b><span class="pill-info-text">{{ extra_info }}</span></b>
+      </span>
+      {% endif %}
+    </div>
+    {% endif %}
   </section>
 
   <section class="rating-details">

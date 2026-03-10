@@ -64,6 +64,9 @@ def init_db():
     _ensure_column("ratings", "image_url", "image_url TEXT")
     _ensure_column("ratings", "mbid", "mbid TEXT")
     _ensure_column("ratings", "mb_url", "mb_url TEXT")
+    _ensure_column("ratings", "rating_emoji", "rating_emoji TEXT")
+    _ensure_column("ratings", "extra_link", "extra_link TEXT")
+    _ensure_column("ratings", "extra_info", "extra_info TEXT")
     cur.execute(
         """
         CREATE TABLE IF NOT EXISTS "album" (
@@ -217,6 +220,16 @@ def init_db():
         author_user_id INTEGER NOT NULL,
         message VARCHAR(500),
         created_at TEXT
+        )
+        """
+    )
+
+    cur.execute(
+        """
+        CREATE TABLE IF NOT EXISTS subject_image_cache (
+            cache_key TEXT PRIMARY KEY,
+            image_url TEXT,
+            updated_at TEXT
         )
         """
     )

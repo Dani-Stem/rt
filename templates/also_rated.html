@@ -1,125 +1,170 @@
 {% extends "base.html" %}
-{% block title %}Also Rated - RealTop{% endblock %}
-{% block content_main_class %}gradient-container{% endblock %}
+{% block title %}Subject Ratings - RealTop{% endblock %}
+{% block content_main_class %}ratings-container{% endblock %}
 {% block content_main %}
-  <div class="page-head">
-    <div class="page-head-left">
-      <p class="title_search">{{ subject.name }}</p>
-      <p style="margin: 4px 0 0 0; color: var(--subtle);">
-        {{ subject.type }} {% if subject.artist %} • {{ subject.artist }}{% endif %} {% if subject.album %} • {{ subject.album }}{% endif %}
-      </p>
-    </div>
+  {% set overall_avg = summary.overall_avg if summary else None %}
+  {% set overall_pct = (overall_avg * 10)|round(0, 'common')|int if overall_avg is not none else none %}
+
+  <div class="page-head rating-detail-head">
+    <p class="title_search">All Ratings</p>
+    {% if overall_pct is not none %}
+      <span class="rating-percent">{{ overall_pct }}%</span>
+    {% endif %}
   </div>
 
-  <div class="rating-form" style="margin-top: 12px;">
-
-
-    {% if rating_image_url %}
-    <div class="rating-hero">
+  {% set _rt = (subject.type or '')|trim|lower %}
+  <div class="rating-hero">
+    {% if summary and summary.image_url %}
       <img
         class="rating-hero-img"
-        src="{{ rating_image_url }}"
-        alt="{{ rating[2] }} cover"
+        src="{{ proxied_image_url(summary.image_url) }}"
+        alt="{{ subject.name }} cover"
         loading="lazy"
       />
-    </div>
+    {% else %}
+      <div
+        aria-hidden="true"
+        style="
+          width:100%;
+          aspect-ratio: 1 / 1;
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          background: color-mix(in srgb, var(--surface) 80%, transparent);
+          color: var(--subtle);
+          font-weight: 900;
+        "
+      >
+        <span style="font-size: 72px; line-height: 1;">
+          {% if _rt == 'album' %}💿{% elif _rt == 'artist' %}👤{% else %}♪{% endif %}
+        </span>
+      </div>
     {% endif %}
-
-    IMG GOES HERE BUT I HAVE TO FIGURE OUT HOW 
-    <br/>
-    place holder
-    <br/>
-    place holder
-    <br/>
-    place holder
-    <br/>
-    place holder
-    <br/>
-    place holder
-    <br/>
-    place holder
-    <br/>
-    place holder
-    <br/>
-    place holder
-    <br/>
-    place holder
-  </div>
-  
-  <div class="rating-form" style="margin-top: 12px;">
-
-    <p class="title_search">Albums</p>    
-    <br/>
-    placeholder
-    <br/>
-    placeholder
-    <br/>
-    placeholder
-    <br/>
-    placeholder
-    <br/>
-    placeholder
   </div>
 
-  <div class="rating-form" style="margin-top: 12px;">
-
-    <p class="title_search">Songs</p>
-    <br/>
-    placeholder
-    <br/>
-    placeholder
-    <br/>
-    placeholder
-    <br/>
-    placeholder
-    <br/>
-    placeholder
-  </div>
-
-  <div class="rating-form" style="margin-top: 12px;">
-    <p class="title_search">Ratings</p>
-    {% if total_count %}
-      <p style="margin: 0 0 10px 0; color: var(--subtle);">
-        {{ total_count }}{% if rating_key %} other{% endif %} user{{ '' if total_count == 1 else 's' }} rated this.
-      </p>
-    {% endif %}
-
-    {% if users %}
-      <div style="display:grid; gap:10px;">
-        {% for u in users %}
-          <a href="/rating/{{ u.rating_key }}" class="btn-nav" style="
-            display:flex;
-            align-items:center;
-            justify-content:space-between;
-            gap:12px;
-            padding:12px;
-            border:1px solid var(--border);
-            border-radius:14px;
-            background: color-mix(in srgb, var(--surface) 88%, transparent);
-            text-decoration:none;
-          ">
-            <span style="display:flex; align-items:center; gap:10px; min-width:0;">
-              <span class="login-avatar">
-                {% if u.profile_pic %}
-                  <img class="avatar" src="{{ u.profile_pic }}" alt="{{ u.username }} avatar" />
+  <div class="profile-card rating-detail-card">
+    <div class="rating-alt">
+      <section class="rating-summary">
+        <div class="rating-summary-top">
+          <div class="summary-main" style="width:100%;">
+            {% if summary %}
+              <div class="summary-pills" style="justify-content: center; margin: 0 0 8px 0;">
+                <span class="pill" style="font-size: 1.05rem; padding: 10px 14px;">Overall <b style="font-size: 1.15em;">{{ summary.overall_avg if summary.overall_avg is not none else '-' }}</b></span>
+              </div>
+            {% endif %}
+            <div style="text-align: center; font-size: 0.98rem; font-weight: 900; letter-spacing: 0.06em; text-transform: uppercase; color: var(--subtle); margin-bottom: 2px;">
+              {{ subject.type }}
+            </div>
+            <h2 class="title" style="margin: 0; text-align: center;">
+              {{ subject.name }}
+              {% if subject.artist %}
+                <span class="divider">•</span>
+                {% if artist_all_ratings_url %}
+                  <a href="{{ artist_all_ratings_url }}" style="text-decoration:none; color: inherit;">
+                    {{ subject.artist }}
+                  </a>
                 {% else %}
-                  <span class="avatar-initial">{{ u.username[0]|upper }}</span>
+                  {{ subject.artist }}
+                {% endif %}
+              {% endif %}
+            </h2>
+            {% if summary %}
+              <p style="margin: 6px 0 0 0; text-align:center; color: var(--subtle);">
+                {{ summary.rating_count }} rating{{ '' if summary.rating_count == 1 else 's' }} • {{ summary.user_count }} user{{ '' if summary.user_count == 1 else 's' }}
+              </p>
+            {% endif %}
+          </div>
+        </div>
+
+        {% if summary %}
+          <div class="summary-pills">
+            <span class="pill">Lyrics <b>{{ summary.avg_lyrics if summary.avg_lyrics is not none else '-' }}</b></span>
+            <span class="pill">Beat <b>{{ summary.avg_beat if summary.avg_beat is not none else '-' }}</b></span>
+            <span class="pill">Flow <b>{{ summary.avg_flow if summary.avg_flow is not none else '-' }}</b></span>
+            <span class="pill">Melody <b>{{ summary.avg_melody if summary.avg_melody is not none else '-' }}</b></span>
+            <span class="pill">Cohesive <b>{{ summary.avg_cohesive if summary.avg_cohesive is not none else '-' }}</b></span>
+            {% if subject_emojis %}
+              <span class="pill">Emoji <b>{{ subject_emojis|join(' ') }}</b></span>
+            {% endif %}
+          </div>
+        {% else %}
+          <p style="margin: 0; color: var(--subtle); text-align:center;">No ratings found.</p>
+        {% endif %}
+      </section>
+    </div>
+  </div>
+
+  <div class="rating-form" style="margin-top: 12px;">
+    {% macro rating_list(items) %}
+      <ul class="rating-list">
+        {% for rating in items %}
+          <li onclick="window.location='/rating/{{ rating[0] }}'">
+            {% set pct = percent_map.get(rating[0]) if percent_map else None %}
+            {% if pct is not none %}
+              <span class="rating-percent" aria-hidden="true">{{ pct }}%</span>
+            {% endif %}
+
+            {% set owner_username = rating[8] %}
+            <div class="rating-item-left">
+              <span class="rating-header">
+                <span class="avatar-wrap">
+                  {% if owner_pics and owner_username in owner_pics and owner_pics[owner_username] %}
+                    <img class="avatar" src="{{ owner_pics[owner_username] }}" alt="{{ owner_username }} avatar" />
+                  {% else %}
+                    <span class="avatar-initial">{{ owner_username[0]|upper }}</span>
+                  {% endif %}
+                </span>
+                <small class="rating-owner">{{ owner_username }}</small>
+              </span>
+              <span class="rating-item-text">
+                <strong>{{ rating[1] }}</strong>: {{ rating[2] }}<br />
+                <small>
+                  Lyrics: {{ rating[3] }} | Beat: {{ rating[4] }} | Flow: {{ rating[5] }} | Melody: {{ rating[6] }} | Cohesive: {{ rating[7] }}
+                </small>
+                {% set em = (rating_emoji_map.get(rating[0]) if rating_emoji_map else None) %}
+                {% if em %}
+                  <span class="rating-reactions" aria-hidden="true">
+                    <span class="rating-emoji">{{ em }}</span>
+                  </span>
                 {% endif %}
               </span>
-              <span style="min-width:0; overflow-wrap:anywhere; word-break:break-word; font-weight:900; color: var(--ink);">
-                @{{ u.username }}
-              </span>
-            </span>
-            <span style="color: var(--subtle); white-space:nowrap;">View rating</span>
-          </a>
+            </div>
+          </li>
         {% endfor %}
+      </ul>
+    {% endmacro %}
+
+    {% if _rt == 'artist' and tab_urls %}
+      <div class="browse-tabs-row" style="margin-bottom: 10px;">
+        <div class="activity-tabs">
+          <a
+            class="activity-tab {% if not active_tab or active_tab == 'all' %}is-active{% endif %}"
+            href="{{ tab_urls['all'] }}"
+            >All</a>
+          <a
+            class="activity-tab {% if active_tab == 'artist' %}is-active{% endif %}"
+            href="{{ tab_urls['artist'] }}"
+            >Artist</a>
+          <a
+            class="activity-tab {% if active_tab == 'albums' %}is-active{% endif %}"
+            href="{{ tab_urls['albums'] }}"
+            >Albums</a>
+          <a
+            class="activity-tab {% if active_tab == 'songs' %}is-active{% endif %}"
+            href="{{ tab_urls['songs'] }}"
+            >Songs</a>
+        </div>
       </div>
+    {% endif %}
+
+    {% if ratings %}
+      {{ rating_list(ratings) }}
 
       {% if pagination %}
         {% include "_pagination.html" %}
       {% endif %}
     {% else %}
-      <p style="margin: 0; color: var(--subtle);">No other ratings yet.</p>
+      <p style="margin: 0; color: var(--subtle);">No ratings yet.</p>
     {% endif %}
   </div>
 {% endblock %}

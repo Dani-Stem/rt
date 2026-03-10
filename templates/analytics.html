@@ -1,0 +1,779 @@
+{% extends "base.html" %}
+{% block title %}Analytics - RealTop{% endblock %}
+{% block content_main_class %}gradient-container{% endblock %}
+{% block content_main %}
+          <p class="title_search">Analytics</p>
+
+          <div class="rating-form" style="margin-top: 12px;">
+            <div class="form-field">
+              <label for="chart_kind">Type</label>
+              <select id="chart_kind">
+                <option value="" selected disabled>Select a type</option>
+                <option value="song">Song</option>
+                <option value="album">Album</option>
+                <option value="artist">Artist</option>
+              </select>
+            </div>
+
+            <div class="form-field" id="chart_action_block" style="display:none;">
+              <label for="chart_action">Activity</label>
+              <select id="chart_action">
+                <option value="" selected disabled>Select activity</option>
+                <option value="rating_view">Views</option>
+                <option value="rating_like">Likes</option>
+                <option value="rating_create">Ratings</option>
+              </select>
+            </div>
+
+            <div class="form-field" id="chart_days_block" style="display:none;">
+              <label for="chart_days">Range</label>
+              <select id="chart_days">
+                <option value="" selected disabled>Select range</option>
+                <option value="1">Last 24 hours</option>
+                <option value="7">Last 7 days</option>
+                <option value="30">Last 30 days</option>
+                <option value="90">Last 90 days</option>
+                <option value="365">Last 365 days</option>
+              </select>
+            </div>
+
+            <div class="rating-block" id="chart_pick_block" style="border-top:none; padding-top:0; margin-top:0; display:none;">
+              <p class="rating-title" style="margin-bottom: 8px;">Pick a rating</p>
+
+              <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+                <input id="chart_q" type="text" placeholder="Search existing ratings..." style="flex:1; min-width: 220px;" />
+                <input id="chart_artist" type="text" placeholder="Artist filter (songs/albums)" style="flex:1; min-width: 220px;" />
+                <button type="button" class="btn-nav" id="chart_search_btn">Search</button>
+              </div>
+
+              <div id="chart_pick_status" style="margin-top: 10px; color: var(--subtle);"></div>
+              <div id="chart_pick_results" style="margin-top: 10px;"></div>
+
+              <input type="hidden" id="chart_mbid" />
+              <input type="hidden" id="chart_name" />
+              <input type="hidden" id="chart_selected_artist" />
+            </div>
+
+            <div class="rating-block" id="activity_block" style="display:none;">
+              <p class="rating-title">User activity over time</p>
+              <div style="position: relative; height: 280px;">
+                <canvas id="activity_chart"></canvas>
+              </div>
+              <div id="chart_status" style="margin-top: 10px; color: var(--subtle);"></div>
+            </div>
+
+            <div class="rating-block" id="overall_block" style="display:none;">
+              <p class="rating-title">Overall rating</p>
+              <div id="overall_hero_wrap" class="rating-hero" style="display:none;">
+                <img id="overall_img" class="rating-hero-img" src="" alt="Subject cover" loading="lazy" />
+                <div
+                  id="overall_placeholder"
+                  aria-hidden="true"
+                  style="
+                    width:100%;
+                    aspect-ratio: 1 / 1;
+                    display:none;
+                    align-items:center;
+                    justify-content:center;
+                    background: color-mix(in srgb, var(--surface) 80%, transparent);
+                    color: var(--subtle);
+                    font-weight: 900;
+                  "
+                >
+                  <span id="overall_placeholder_icon" style="font-size: 72px; line-height: 1;">♪</span>
+                </div>
+              </div>
+              <div id="overall_wrap" style="
+                display:flex;
+                gap:12px;
+                align-items:flex-start;
+                padding:12px;
+                border:1px solid var(--border);
+                border-radius:14px;
+                background: color-mix(in srgb, var(--surface) 88%, transparent);
+              ">
+                <div style="min-width:0; flex:1; text-align:center;">
+                  <div id="overall_title" style="font-weight:900; color: var(--ink); overflow-wrap:anywhere; word-break:break-word;"></div>
+                  <div id="overall_meta" style="margin-top: 2px; color: var(--subtle);"></div>
+                  <div id="overall_pills" class="summary-pills" style="margin-top: 10px;"></div>
+                </div>
+              </div>
+              <div id="overall_status" style="margin-top: 10px; color: var(--subtle);"></div>
+            </div>
+          </div>
+
+          <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+          <script>
+            (() => {
+              const kindSel = document.getElementById('chart_kind');
+              const actionSel = document.getElementById('chart_action');
+              const daysSel = document.getElementById('chart_days');
+              const actionBlock = document.getElementById('chart_action_block');
+              const daysBlock = document.getElementById('chart_days_block');
+              const pickBlock = document.getElementById('chart_pick_block');
+              const qInput = document.getElementById('chart_q');
+              const artistInput = document.getElementById('chart_artist');
+              const searchBtn = document.getElementById('chart_search_btn');
+              const pickStatus = document.getElementById('chart_pick_status');
+              const pickResults = document.getElementById('chart_pick_results');
+              const status = document.getElementById('chart_status');
+              const activityBlock = document.getElementById('activity_block');
+              const overallBlock = document.getElementById('overall_block');
+              const overallStatus = document.getElementById('overall_status');
+              const overallTitle = document.getElementById('overall_title');
+              const overallMeta = document.getElementById('overall_meta');
+              const overallPills = document.getElementById('overall_pills');
+              const overallHeroWrap = document.getElementById('overall_hero_wrap');
+              const overallImg = document.getElementById('overall_img');
+              const overallPlaceholder = document.getElementById('overall_placeholder');
+              const overallPlaceholderIcon = document.getElementById('overall_placeholder_icon');
+
+              const mbidEl = document.getElementById('chart_mbid');
+              const nameEl = document.getElementById('chart_name');
+              const selectedArtistEl = document.getElementById('chart_selected_artist');
+
+              const canvas = document.getElementById('activity_chart');
+              let chart = null;
+
+              const CHARTS_STATE_KEY = 'CHARTS_STATE_KEY';
+
+              const saveChartsState = () => {
+                try {
+                  const state = {
+                    kind: (kindSel?.value || '').trim(),
+                    action: (actionSel?.value || '').trim(),
+                    days: (daysSel?.value || '').trim(),
+                    q: (qInput?.value || '').trim(),
+                    artistQuery: (artistInput?.value || '').trim(),
+                    mbid: (mbidEl?.value || '').trim(),
+                    name: (nameEl?.value || '').trim(),
+                    artist: (selectedArtistEl?.value || '').trim(),
+                    t: Date.now(),
+                  };
+                  sessionStorage.setItem(CHARTS_STATE_KEY, JSON.stringify(state));
+                } catch {
+                }
+              };
+
+              const restoreChartsState = () => {
+                try {
+                  const raw = sessionStorage.getItem(CHARTS_STATE_KEY);
+                  if (!raw) return;
+                  const state = JSON.parse(raw);
+                  if (!state || typeof state !== 'object') return;
+
+                  if (kindSel && state.kind) kindSel.value = state.kind;
+                  if (actionSel && state.action) actionSel.value = state.action;
+                  if (daysSel && state.days) daysSel.value = state.days;
+
+                  syncTypeUI();
+                  syncProgressiveVisibility();
+                  syncSelectPlaceholderState(kindSel);
+                  syncSelectPlaceholderState(actionSel);
+                  syncSelectPlaceholderState(daysSel);
+
+                  if (qInput && typeof state.q === 'string') qInput.value = state.q;
+                  if (artistInput && typeof state.artistQuery === 'string') artistInput.value = state.artistQuery;
+
+                  if (mbidEl && typeof state.mbid === 'string') mbidEl.value = state.mbid;
+                  if (nameEl && typeof state.name === 'string') nameEl.value = state.name;
+                  if (selectedArtistEl && typeof state.artist === 'string') selectedArtistEl.value = state.artist;
+
+                  if ((mbidEl?.value || '').trim() || (nameEl?.value || '').trim()) {
+                    pickResults.innerHTML = '';
+                    pickStatus.textContent = `Selected: ${(nameEl?.value || '').trim()}${(selectedArtistEl?.value || '').trim() ? ' — ' + (selectedArtistEl?.value || '').trim() : ''}`;
+                    loadChart();
+                    loadOverall();
+                  }
+                } catch {
+                }
+              };
+
+              // --------------------------------------------
+              // Set to true to use sample data.
+              // --------------------------------------------
+              const USE_SAMPLE_CHARTS_DATA = true;
+              const SAMPLE_SUBJECTS = {
+                song: [
+                  { mbid: 'sample-song-1', name: 'Cartoons & Cereal', artist: 'Kendrick Lamar', rating_count: 18, image_url: 'https://coverartarchive.org/release-group/499c19c8-0dab-4824-884b-6191d145e95b/front' },
+                  { mbid: 'sample-song-2', name: 'peekaboo', artist: 'Kendrick Lamar', rating_count: 12, image_url: 'https://coverartarchive.org/release-group/32cb822c-a14e-49ce-a169-f209c5f31e0f/front' },
+                ],
+                album: [
+                  { mbid: 'sample-album-1', name: 'DAMN.', artist: 'Kendrick Lamar', rating_count: 22, image_url: 'https://coverartarchive.org/release-group/b88655ba-7469-48b8-a296-b9011ab73ef3/front' },
+                  { mbid: 'sample-album-2', name: 'good kid, m.A.A.d city', artist: 'Kendrick Lamar', rating_count: 15, image_url: 'https://coverartarchive.org/release-group/499c19c8-0dab-4824-884b-6191d145e95b/front' },
+                ],
+                artist: [
+                  { mbid: 'sample-artist-1', name: 'Kendrick Lamar', artist: '', rating_count: 30, image_url: 'https://commons.wikimedia.org/wiki/Special:FilePath/Pulitzer2018-portraits-kendrick-lamar.jpg' },
+                  { mbid: 'sample-artist-2', name: 'Drake', artist: '', rating_count: 24, image_url: 'https://commons.wikimedia.org/wiki/Special:FilePath/Drake%20July%202016.jpg' },
+                ],
+              };
+              const sampleSeriesForDays = (days) => {
+                const d = parseInt(days, 10) || 7;
+                if (d <= 1) {
+                  return { labels: ['12a', '4a', '8a', '12p', '4p', '8p'], events: [1, 0, 3, 5, 4, 2], users: [1, 0, 2, 3, 2, 1] };
+                }
+                if (d <= 7) {
+                  return { labels: ['Day 1', 'Day 2', 'Day 3', 'Day 4', 'Day 5', 'Day 6', 'Day 7'], events: [2, 4, 3, 7, 6, 8, 10], users: [1, 2, 2, 3, 3, 4, 5] };
+                }
+                if (d <= 30) {
+                  const w = Math.min(8, Math.ceil(d / 4));
+                  const labels = Array.from({ length: w }, (_, i) => `W${i + 1}`);
+                  return { labels, events: labels.map((_, i) => 2 + i * 2 + (i % 3)), users: labels.map((_, i) => 1 + Math.floor(i / 2)) };
+                }
+                if (d <= 90) {
+                  const w = Math.min(13, Math.ceil(d / 7));
+                  const labels = Array.from({ length: w }, (_, i) => `W${i + 1}`);
+                  return { labels, events: labels.map((_, i) => 3 + i + (i % 4)), users: labels.map((_, i) => 2 + Math.floor(i / 3)) };
+                }
+                const m = Math.min(12, Math.ceil(d / 30));
+                const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                const labels = Array.from({ length: m }, (_, i) => months[i % 12]);
+                return { labels, events: labels.map((_, i) => 5 + i * 3), users: labels.map((_, i) => 3 + Math.floor(i / 2)) };
+              };
+              const SAMPLE_SUMMARY = {
+                overall_avg: 8.4,
+                avg_lyrics: 8.8,
+                avg_beat: 8.1,
+                avg_flow: 8.5,
+                avg_melody: 8.0,
+                avg_cohesive: 8.6,
+                rating_count: 20,
+                user_count: 11,
+                image_url: '',
+              };
+
+              const esc = (s) =>
+                String(s || '')
+                  .replaceAll('&', '&amp;')
+                  .replaceAll('<', '&lt;')
+                  .replaceAll('>', '&gt;')
+                  .replaceAll('"', '&quot;')
+                  .replaceAll("'", '&#39;');
+
+              const kindIcon = (k) => {
+                if (k === 'album') return '💿';
+                if (k === 'artist') return '👤';
+                return '♪';
+              };
+
+              const renderThumbHtml = (img, kind) => {
+                const src = String(img || '').trim();
+                if (src) {
+                  return `<img src="${esc(src)}" alt="" loading="lazy" style="width:44px;height:44px;border-radius:12px;object-fit:cover;border:1px solid var(--border);box-shadow:var(--shadow-sm);flex:0 0 auto;" />`;
+                }
+                const icon = kindIcon(String(kind || '').trim());
+                return `<div aria-hidden="true" style="width:44px;height:44px;border-radius:12px;border:1px solid var(--border);background: color-mix(in srgb, var(--surface) 80%, transparent);box-shadow:var(--shadow-sm);display:flex;align-items:center;justify-content:center;color: var(--subtle);font-weight:900;flex:0 0 auto;">${esc(icon)}</div>`;
+              };
+
+              const syncSelectPlaceholderState = (sel) => {
+                if (!sel) return;
+                const isPlaceholder = !((sel.value || '').trim());
+                sel.style.setProperty(
+                  'color',
+                  isPlaceholder ? 'var(--subtle)' : 'var(--ink)',
+                  'important',
+                );
+              };
+
+              const clearPickAndCharts = () => {
+                mbidEl.value = '';
+                nameEl.value = '';
+                selectedArtistEl.value = '';
+                pickStatus.textContent = '';
+                pickResults.innerHTML = '';
+                status.textContent = '';
+                if (chart) {
+                  chart.destroy();
+                  chart = null;
+                }
+                if (activityBlock) activityBlock.style.display = 'none';
+                overallStatus.textContent = '';
+                overallTitle.textContent = '';
+                overallMeta.textContent = '';
+                overallPills.innerHTML = '';
+                overallHeroWrap.style.display = 'none';
+                if (overallBlock) overallBlock.style.display = 'none';
+              };
+
+              const syncProgressiveVisibility = () => {
+                const hasKind = !!((kindSel.value || '').trim());
+                const hasAction = !!((actionSel.value || '').trim());
+                const hasDays = !!((daysSel.value || '').trim());
+
+                if (actionBlock) actionBlock.style.display = hasKind ? '' : 'none';
+                if (daysBlock) daysBlock.style.display = hasAction ? '' : 'none';
+                if (pickBlock) pickBlock.style.display = hasDays ? '' : 'none';
+
+                if (!hasKind) {
+                  actionSel.value = '';
+                  daysSel.value = '';
+                  syncSelectPlaceholderState(actionSel);
+                  syncSelectPlaceholderState(daysSel);
+                  clearPickAndCharts();
+                } else if (!hasAction) {
+                  daysSel.value = '';
+                  syncSelectPlaceholderState(daysSel);
+                  clearPickAndCharts();
+                } else if (!hasDays) {
+                  clearPickAndCharts();
+                }
+              };
+
+              const syncTypeUI = () => {
+                const kind = (kindSel.value || '').trim();
+                const hasKind = !!kind;
+                const showArtist = hasKind && kind !== 'artist';
+                artistInput.style.display = showArtist ? '' : 'none';
+                if (!showArtist) artistInput.value = '';
+
+                syncProgressiveVisibility();
+
+                qInput.disabled = !hasKind;
+                artistInput.disabled = !hasKind;
+                searchBtn.disabled = !hasKind;
+                if (!hasKind) {
+                  qInput.value = '';
+                  pickStatus.textContent = '';
+                  pickResults.innerHTML = '';
+
+                  mbidEl.value = '';
+                  nameEl.value = '';
+                  selectedArtistEl.value = '';
+
+                  status.textContent = '';
+                  if (chart) {
+                    chart.destroy();
+                    chart = null;
+                  }
+                  if (activityBlock) activityBlock.style.display = 'none';
+
+                  overallStatus.textContent = '';
+                  overallTitle.textContent = '';
+                  overallMeta.textContent = '';
+                  overallPills.innerHTML = '';
+                  overallHeroWrap.style.display = 'none';
+                  if (overallBlock) overallBlock.style.display = 'none';
+                }
+              };
+
+              const renderPickResults = (items) => {
+                if (!items || !items.length) {
+                  pickResults.innerHTML = '';
+                  return;
+                }
+                const kind = (kindSel.value || '').trim();
+                pickResults.innerHTML = `<div style="display:grid; gap:10px;">${
+                  items.map((it, idx) => {
+                    const title = it.name || 'Untitled';
+                    const artist = it.artist || '';
+                    const count = it.rating_count || 0;
+                    const img = it.image_url || '';
+                    const thumb = renderThumbHtml(img, kind);
+                    return `
+                      <div data-idx="${idx}" role="button" tabindex="0" style="
+                        display:flex;
+                        gap:12px;
+                        align-items:flex-start;
+                        padding:12px;
+                        border:1px solid var(--border);
+                        border-radius:14px;
+                        background: color-mix(in srgb, var(--surface) 88%, transparent);
+                        cursor:pointer;
+                        overflow-wrap:anywhere;
+                        word-break:break-word;
+                      ">
+                        ${thumb}
+                        <div style="min-width:0;">
+                          <div style="font-weight:900; color: var(--ink);">${esc(title)}</div>
+                          <div style="color: var(--subtle); margin-top: 2px;">${esc(artist)}${artist ? ' • ' : ''}${esc(count)} rating${count === 1 ? '' : 's'}</div>
+                        </div>
+                      </div>
+                    `;
+                  }).join('')
+                }</div>`;
+
+                pickResults.querySelectorAll('[data-idx]').forEach((row) => {
+                  const select = () => {
+                    const idx = Number(row.getAttribute('data-idx'));
+                    const it = items[idx];
+                    if (!it) return;
+                    mbidEl.value = it.mbid || '';
+                    nameEl.value = it.name || '';
+                    selectedArtistEl.value = it.artist || '';
+                    pickStatus.textContent = `Selected: ${it.name || ''}${it.artist ? ' — ' + it.artist : ''}`;
+                    pickResults.innerHTML = '';
+                    saveChartsState();
+                    loadChart();
+                    loadOverall();
+                  };
+                  row.addEventListener('click', select);
+                  row.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      select();
+                    }
+                  });
+                });
+              };
+
+              const doSearch = async () => {
+                const kind = kindSel.value;
+                const q = (qInput.value || '').trim();
+                const artist = (artistInput.value || '').trim();
+                if (!kind) {
+                  pickStatus.textContent = 'Select a type first.';
+                  pickResults.innerHTML = '';
+                  return;
+                }
+                if (!q) {
+                  pickStatus.textContent = 'Type a search query.';
+                  pickResults.innerHTML = '';
+                  return;
+                }
+                pickStatus.textContent = 'Searching...';
+                pickResults.innerHTML = '';
+                if (USE_SAMPLE_CHARTS_DATA) {
+                  const items = SAMPLE_SUBJECTS[kind] || [];
+                  pickStatus.textContent = items.length ? `Found ${items.length} sample results` : 'No sample results.';
+                  renderPickResults(items);
+                  return;
+                }
+                try {
+                  const res = await fetch(
+                    `/api/charts/subjects?${new URLSearchParams({
+                      kind,
+                      q,
+                      ...(artist ? { artist } : {}),
+                      limit: '10',
+                    }).toString()}`,
+                    { headers: { Accept: 'application/json' } },
+                  );
+                  const data = await res.json();
+                  if (!data || !data.ok) {
+                    pickStatus.textContent = data?.error || 'Search failed.';
+                    return;
+                  }
+                  const items = data.items || [];
+                  pickStatus.textContent = items.length ? `Found ${items.length} results` : 'No results.';
+                  renderPickResults(items);
+                } catch (e) {
+                  pickStatus.textContent = 'Search failed. Try again.';
+                }
+              };
+
+              const loadChart = async () => {
+                const kind = kindSel.value;
+                const action = actionSel.value;
+                const days = daysSel.value;
+                const mbid = (mbidEl.value || '').trim();
+                const name = (nameEl.value || '').trim();
+                const artist = (selectedArtistEl.value || '').trim();
+
+                if (!action || !days) {
+                  if (activityBlock) activityBlock.style.display = 'none';
+                  status.textContent = 'Select activity and range.';
+                  return;
+                }
+
+                if (!mbid && !name) {
+                  if (activityBlock) activityBlock.style.display = 'none';
+                  status.textContent = 'Pick a subject first.';
+                  return;
+                }
+
+                if (activityBlock) activityBlock.style.display = '';
+                status.textContent = 'Loading chart...';
+                if (USE_SAMPLE_CHARTS_DATA) {
+                  const s = sampleSeriesForDays(days);
+                  const labels = s.labels || [];
+                  const events = s.events || [];
+                  const users = s.users || [];
+                  if (chart) chart.destroy();
+                  chart = new Chart(canvas.getContext('2d'), {
+                    type: 'line',
+                    data: {
+                      labels,
+                      datasets: [
+                        {
+                          label: 'Events',
+                          data: events,
+                          borderColor: '#3b82f6',
+                          backgroundColor: 'rgba(59,130,246,0.18)',
+                          tension: 0.25,
+                          fill: true,
+                        },
+                        {
+                          label: 'Unique users',
+                          data: users,
+                          borderColor: '#22c55e',
+                          backgroundColor: 'rgba(34,197,94,0.12)',
+                          tension: 0.25,
+                          fill: false,
+                        },
+                      ],
+                    },
+                    options: {
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: { legend: { display: true } },
+                      scales: {
+                        x: { ticks: { maxRotation: 0, autoSkip: true } },
+                        y: { beginAtZero: true, precision: 0 },
+                      },
+                    },
+                  });
+                  status.textContent = labels.length ? '' : 'No activity in this range.';
+                  return;
+                }
+                try {
+                  const res = await fetch(
+                    `/api/charts/subject-activity?${new URLSearchParams({
+                      kind,
+                      action,
+                      days,
+                      ...(mbid ? { mbid } : {}),
+                      ...(name ? { name } : {}),
+                      ...(artist ? { artist } : {}),
+                    }).toString()}`,
+                    { headers: { Accept: 'application/json' } },
+                  );
+                  const data = await res.json();
+                  if (!data || !data.ok) {
+                    status.textContent = data?.error || 'Could not load chart.';
+                    return;
+                  }
+
+                  const labels = data.labels || [];
+                  const events = data.events || [];
+                  const users = data.users || [];
+
+                  if (chart) chart.destroy();
+                  chart = new Chart(canvas.getContext('2d'), {
+                    type: 'line',
+                    data: {
+                      labels,
+                      datasets: [
+                        {
+                          label: 'Events',
+                          data: events,
+                          borderColor: '#3b82f6',
+                          backgroundColor: 'rgba(59,130,246,0.18)',
+                          tension: 0.25,
+                          fill: true,
+                        },
+                        {
+                          label: 'Unique users',
+                          data: users,
+                          borderColor: '#22c55e',
+                          backgroundColor: 'rgba(34,197,94,0.12)',
+                          tension: 0.25,
+                          fill: false,
+                        },
+                      ],
+                    },
+                    options: {
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      plugins: {
+                        legend: { display: true },
+                      },
+                      scales: {
+                        x: { ticks: { maxRotation: 0, autoSkip: true } },
+                        y: { beginAtZero: true, precision: 0 },
+                      },
+                    },
+                  });
+
+                  status.textContent = labels.length ? '' : 'No activity in this range.';
+                } catch (e) {
+                  status.textContent = 'Could not load chart.';
+                }
+              };
+
+              const loadOverall = async () => {
+                const kind = kindSel.value;
+                const mbid = (mbidEl.value || '').trim();
+                const name = (nameEl.value || '').trim();
+                const artist = (selectedArtistEl.value || '').trim();
+                if (!mbid && !name) {
+                  if (overallBlock) overallBlock.style.display = 'none';
+                  overallStatus.textContent = '';
+                  overallTitle.textContent = '';
+                  overallMeta.textContent = '';
+                  overallPills.innerHTML = '';
+                  overallHeroWrap.style.display = 'none';
+                  return;
+                }
+
+                if (overallBlock) overallBlock.style.display = '';
+                overallStatus.textContent = 'Loading overall...';
+                if (USE_SAMPLE_CHARTS_DATA) {
+                  const s = SAMPLE_SUMMARY;
+                  const sampleItems = SAMPLE_SUBJECTS[kind] || [];
+                  const picked = sampleItems.find((it) => {
+                    const itMbid = String(it?.mbid || '').trim();
+                    const itName = String(it?.name || '').trim();
+                    const itArtist = String(it?.artist || '').trim();
+                    if (mbid && itMbid) return itMbid === mbid;
+                    if (!name) return false;
+                    return itName === name && itArtist === (artist || '');
+                  });
+                  const pickedImage = String(picked?.image_url || '').trim();
+                  overallTitle.textContent = `${name}${artist ? ' — ' + artist : ''}`;
+                  const alsoRatedUrl = `/also-rated?${new URLSearchParams({
+                    kind,
+                    ...(mbid ? { mbid } : {}),
+                    ...(name ? { name } : {}),
+                    ...(artist ? { artist } : {}),
+                  }).toString()}`;
+                  overallMeta.innerHTML = `<a class="link-plain" href="${alsoRatedUrl}">${s.rating_count} rating${s.rating_count === 1 ? '' : 's'}<span class="divider" style="margin:0 0.18rem; display:inline-block;">•</span>${s.user_count} user${s.user_count === 1 ? '' : 's'}</a>`;
+                  const pill = (label, v) =>
+                    `<span class="pill">${label} <b>${v == null ? '-' : v}</b></span>`;
+                  overallPills.innerHTML = [
+                    pill('Overall', s.overall_avg),
+                    pill('Lyrics', s.avg_lyrics),
+                    pill('Beat', s.avg_beat),
+                    pill('Flow', s.avg_flow),
+                    pill('Melody', s.avg_melody),
+                    pill('Cohesive', s.avg_cohesive),
+                  ].join('');
+                  overallHeroWrap.style.display = '';
+                  if (pickedImage) {
+                    overallImg.src = pickedImage;
+                    overallImg.alt = `${name || 'Subject'} cover`;
+                    overallImg.style.display = '';
+                    if (overallPlaceholder) overallPlaceholder.style.display = 'none';
+                  } else {
+                    overallImg.removeAttribute('src');
+                    overallImg.style.display = 'none';
+                    if (overallPlaceholderIcon) overallPlaceholderIcon.textContent = kindIcon(kind);
+                    if (overallPlaceholder) overallPlaceholder.style.display = 'flex';
+                  }
+                  overallStatus.textContent = '';
+                  return;
+                }
+                try {
+                  const res = await fetch(
+                    `/api/charts/subject-summary?${new URLSearchParams({
+                      kind,
+                      ...(mbid ? { mbid } : {}),
+                      ...(name ? { name } : {}),
+                      ...(artist ? { artist } : {}),
+                    }).toString()}`,
+                    { headers: { Accept: 'application/json' } },
+                  );
+                  const data = await res.json();
+                  if (!data || !data.ok) {
+                    overallStatus.textContent = data?.error || 'Could not load overall.';
+                    return;
+                  }
+                  const s = data.summary;
+                  overallTitle.textContent = `${name}${artist ? ' — ' + artist : ''}`;
+                  if (!s) {
+                    overallMeta.textContent = 'No ratings found.';
+                    overallPills.innerHTML = '';
+                    overallHeroWrap.style.display = 'none';
+                    overallStatus.textContent = '';
+                    return;
+                  }
+
+                  const alsoRatedUrl = `/also-rated?${new URLSearchParams({
+                    kind,
+                    ...(mbid ? { mbid } : {}),
+                    ...(name ? { name } : {}),
+                    ...(artist ? { artist } : {}),
+                  }).toString()}`;
+                  overallMeta.innerHTML = `<a class="link-plain" href="${alsoRatedUrl}">${s.rating_count} rating${s.rating_count === 1 ? '' : 's'}<span class="divider" style="margin:0 0.18rem; display:inline-block;">•</span>${s.user_count} user${s.user_count === 1 ? '' : 's'}</a>`;
+
+                  const pill = (label, v) =>
+                    `<span class="pill">${label} <b>${v == null ? '-' : v}</b></span>`;
+                  overallPills.innerHTML = [
+                    pill('Overall', s.overall_avg),
+                    pill('Lyrics', s.avg_lyrics),
+                    pill('Beat', s.avg_beat),
+                    pill('Flow', s.avg_flow),
+                    pill('Melody', s.avg_melody),
+                    pill('Cohesive', s.avg_cohesive),
+                  ].join('');
+
+                  overallHeroWrap.style.display = '';
+                  if (s.image_url) {
+                    overallImg.src = s.image_url;
+                    overallImg.alt = `${name || 'Subject'} cover`;
+                    overallImg.style.display = '';
+                    if (overallPlaceholder) overallPlaceholder.style.display = 'none';
+                  } else {
+                    overallImg.removeAttribute('src');
+                    overallImg.style.display = 'none';
+                    if (overallPlaceholderIcon) overallPlaceholderIcon.textContent = kindIcon(kind);
+                    if (overallPlaceholder) overallPlaceholder.style.display = 'flex';
+                  }
+                  overallStatus.textContent = '';
+                } catch (e) {
+                  overallStatus.textContent = 'Could not load overall.';
+                }
+              };
+
+              kindSel.addEventListener('change', () => {
+                mbidEl.value = '';
+                nameEl.value = '';
+                selectedArtistEl.value = '';
+                pickStatus.textContent = '';
+                pickResults.innerHTML = '';
+                status.textContent = '';
+                if (chart) {
+                  chart.destroy();
+                  chart = null;
+                }
+                if (activityBlock) activityBlock.style.display = 'none';
+                if (overallBlock) overallBlock.style.display = 'none';
+                overallStatus.textContent = '';
+                overallTitle.textContent = '';
+                overallMeta.textContent = '';
+                overallPills.innerHTML = '';
+                overallHeroWrap.style.display = 'none';
+                syncTypeUI();
+                syncSelectPlaceholderState(kindSel);
+
+                saveChartsState();
+              });
+              actionSel.addEventListener('change', () => {
+                syncProgressiveVisibility();
+                syncSelectPlaceholderState(actionSel);
+                saveChartsState();
+                loadChart();
+              });
+              daysSel.addEventListener('change', () => {
+                syncProgressiveVisibility();
+                syncSelectPlaceholderState(daysSel);
+                saveChartsState();
+                loadChart();
+              });
+              searchBtn.addEventListener('click', doSearch);
+              qInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  doSearch();
+                }
+              });
+
+              qInput.addEventListener('input', () => saveChartsState());
+              artistInput.addEventListener('input', () => saveChartsState());
+
+              window.addEventListener('pageshow', () => {
+                restoreChartsState();
+              });
+
+              restoreChartsState();
+
+              syncTypeUI();
+              syncProgressiveVisibility();
+              syncSelectPlaceholderState(kindSel);
+              syncSelectPlaceholderState(actionSel);
+              syncSelectPlaceholderState(daysSel);
+              if (activityBlock) activityBlock.style.display = 'none';
+              if (overallBlock) overallBlock.style.display = 'none';
+            })();
+          </script>
+        
+{% endblock %}

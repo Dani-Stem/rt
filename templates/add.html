@@ -29,6 +29,61 @@
               <input type="hidden" id="content_artist" name="content_artist" value="{{ draft.get('content_artist','') if draft else '' }}" />
             </div>
 
+            <div class="form-field">
+              <label>Emoji</label>
+              <input
+                type="hidden"
+                id="rating_emoji"
+                name="rating_emoji"
+                value="{{ draft.get('rating_emoji','') if draft else '' }}"
+              />
+
+              <details class="emoji-picker" data-target-input="rating_emoji">
+                <summary
+                  class="emoji-picker-trigger"
+                  aria-label="Pick an emoji for this rating"
+                  title="Pick an emoji"
+                >
+                  <span id="rating_emoji_display">{{ (draft.get('rating_emoji') if draft else '') or '😊' }}</span>
+                </summary>
+                <div class="emoji-picker-panel" role="menu" aria-label="Emoji picker">
+                  {% for e in reaction_emojis %}
+                  <button
+                    type="button"
+                    class="emoji-option"
+                    data-emoji="{{ e }}"
+                    aria-label="Choose {{ e }}"
+                  >
+                    {{ e }}
+                  </button>
+                  {% endfor %}
+                </div>
+              </details>
+            </div>
+
+            <div class="form-field">
+              <label for="extra_link">Link (optional)</label>
+              <input
+                type="url"
+                id="extra_link"
+                name="extra_link"
+                inputmode="url"
+                placeholder="https://..."
+                value="{{ draft.get('extra_link','') if draft else '' }}"
+              />
+            </div>
+
+            <div class="form-field">
+              <label for="extra_info">Note (optional)</label>
+              <textarea
+                id="extra_info"
+                name="extra_info"
+                rows="3"
+                cols="40"
+                placeholder="Write something..."
+              >{{ draft.get('extra_info','') if draft else '' }}</textarea>
+            </div>
+
             <!--
             <div class="form-field is-file">
               <label for="rating_image">Image (optional)</label>
@@ -233,7 +288,7 @@
               </div>
 
               <div class="form-group" id="mb_artist_group">
-                <label for="mb_artist">Artist (optional)</label>
+                <label for="mb_artist" id="mb_artist_label">Artist</label>
                 <input id="mb_artist" type="text" placeholder="Type artist name" />
               </div>
 
@@ -242,13 +297,54 @@
                 <label class="btn-nav modal-secondary" for="mb-modal-toggle">Close</label>
               </div>
 
-              <div id="mb_status" style="margin-top: 10px; color: var(--subtle);"></div>
+              <div id="mb_status" style="margin-top: 10px; color: var(--subtle); text-align: center;"></div>
               <div id="mb_results" style="margin-top: 10px;"></div>
             </div>
           </div>
 
           <script>
             (() => {
+              const emojiInput = document.getElementById('rating_emoji');
+              const emojiDisplay = document.getElementById('rating_emoji_display');
+              const emojiPicker = document.querySelector(
+                'details.emoji-picker[data-target-input="rating_emoji"]',
+              );
+
+              if (emojiInput && emojiDisplay && emojiPicker) {
+                const setEmoji = (em) => {
+                  const v = String(em || '').trim();
+                  emojiInput.value = v;
+                  emojiDisplay.textContent = v || '😊';
+                };
+
+                setEmoji(emojiInput.value);
+
+                emojiPicker.querySelectorAll('[data-emoji]').forEach((btn) => {
+                  btn.addEventListener('click', () => {
+                    setEmoji(btn.getAttribute('data-emoji'));
+                    emojiPicker.open = false;
+                  });
+                });
+
+                document.addEventListener(
+                  'pointerdown',
+                  (e) => {
+                    if (!emojiPicker.open) return;
+                    const t = e.target;
+                    if (t instanceof Node && emojiPicker.contains(t)) return;
+                    emojiPicker.open = false;
+                  },
+                  { capture: true },
+                );
+
+                
+                document.addEventListener('keydown', (e) => {
+                  if (e.key === 'Escape' && emojiPicker.open) {
+                    emojiPicker.open = false;
+                  }
+                });
+              }
+
               const typeSelect = document.getElementById('type');
               const nameField = document.getElementById('name_field');
               const nameInput = document.getElementById('rating_name');
@@ -258,11 +354,22 @@
               const modalToggle = document.getElementById('mb-modal-toggle');
               const qInput = document.getElementById('mb_q');
               const qLabel = document.getElementById('mb_q_label');
+              const artistLabel = document.getElementById('mb_artist_label');
               const artistInput = document.getElementById('mb_artist');
               const artistGroup = document.getElementById('mb_artist_group');
               const btn = document.getElementById('mb_search_btn');
               const status = document.getElementById('mb_status');
               const resultsEl = document.getElementById('mb_results');
+
+              const setStatus = (message, tone = 'info') => {
+                if (!status) return;
+                status.textContent = message || '';
+                if (!message) {
+                  status.style.color = 'var(--subtle)';
+                  return;
+                }
+                status.style.color = tone === 'danger' ? 'var(--danger)' : 'var(--subtle)';
+              };
 
               const kindFromType = (t) => {
                 const v = (t || '').toLowerCase();
@@ -276,7 +383,6 @@
                 if (nameField) nameField.style.display = hasType ? '' : 'none';
                 if (nameInput) nameInput.disabled = !hasType;
 
-                // If type is cleared, also clear any prior selection to avoid mismatch.
                 if (!hasType) {
                   if (modalToggle) modalToggle.checked = false;
                   if (nameInput) nameInput.value = '';
@@ -285,7 +391,7 @@
                   if (contentArtistInput) contentArtistInput.value = '';
                   if (qInput) qInput.value = '';
                   if (artistInput) artistInput.value = '';
-                  if (status) status.textContent = '';
+                  setStatus('');
                   if (resultsEl) resultsEl.innerHTML = '';
                 }
               };
@@ -312,6 +418,7 @@
                 const showArtist = kind !== 'artist';
                 if (artistGroup) artistGroup.style.display = showArtist ? '' : 'none';
                 if (!showArtist && artistInput) artistInput.value = '';
+                if (artistLabel) artistLabel.textContent = showArtist ? 'Artist' : 'Artist';
               };
 
               const esc = (s) =>
@@ -407,11 +514,7 @@
                     const it = items[idx];
                     if (!it) return;
                     const selectedTitle = it.title || '';
-                    const selectedArtist = it.artist || '';
-                    nameInput.value =
-                      (kind === 'song' || kind === 'album') && selectedArtist
-                        ? `${selectedTitle} — ${selectedArtist}`
-                        : selectedTitle;
+                    nameInput.value = selectedTitle;
                     mbidInput.value = it.mbid || '';
                     mbUrlInput.value = it.url || '';
                     if (contentArtistInput) contentArtistInput.value = it.artist || '';
@@ -432,7 +535,7 @@
                 if (!modalToggle) return;
                 modalToggle.checked = true;
                 syncModalUI();
-                status.textContent = '';
+                setStatus('');
                 resultsEl.innerHTML = '';
                 const current = (nameInput?.value || '').trim();
                 if (qInput && current) qInput.value = current;
@@ -440,16 +543,28 @@
               };
 
               const doSearch = async () => {
+                const kind = kindFromType(typeSelect?.value);
+
                 const q = (qInput.value || '').trim();
                 if (!q) {
-                  status.textContent = 'Type a search query.';
+                  const prompt =
+                    kind === 'album'
+                      ? 'Type an album name.'
+                      : kind === 'song'
+                        ? 'Type a song name.'
+                        : 'Type an artist name.';
+                  setStatus(prompt, 'danger');
                   resultsEl.innerHTML = '';
                   return;
                 }
-
-                const kind = kindFromType(typeSelect?.value);
                 const artist = (artistInput?.value || '').trim();
-                status.textContent = 'Searching...';
+
+                if ((kind === 'song' || kind === 'album') && !artist) {
+                  setStatus('Type an artist name.', 'danger');
+                  resultsEl.innerHTML = '';
+                  return;
+                }
+                setStatus('Searching...');
                 resultsEl.innerHTML = '';
 
                 try {
@@ -464,14 +579,14 @@
                   );
                   const data = await res.json();
                   if (!data || !data.ok) {
-                    status.textContent = data?.error || 'Search failed.';
+                    setStatus(data?.error || 'Search failed.', 'danger');
                     return;
                   }
                   const items = data.items || [];
-                  status.textContent = items.length ? `Found ${items.length} results` : 'No results.';
+                  setStatus(items.length ? `Found ${items.length} results` : 'No results.');
                   render(items, kind);
                 } catch (e) {
-                  status.textContent = 'Search failed. Try again.';
+                  setStatus('Search failed. Try again.', 'danger');
                 }
               };
 
@@ -523,6 +638,36 @@
                 syncModalUI();
                 syncNameVisibility();
               });
+
+              const formEl = document.querySelector('form.rating-form');
+              const submitBtn = formEl?.querySelector('button[type="submit"].btn-submit');
+              const setSubmitLoading = (isLoading) => {
+                if (!submitBtn) return;
+
+                if (isLoading) {
+                  if (!submitBtn.dataset.originalText) {
+                    submitBtn.dataset.originalText = submitBtn.textContent || 'Submit';
+                  }
+                  submitBtn.classList.add('is-loading');
+                  submitBtn.disabled = true;
+                  submitBtn.setAttribute('aria-busy', 'true');
+                  submitBtn.textContent = 'Submitting…';
+                  return;
+                }
+
+                submitBtn.classList.remove('is-loading');
+                submitBtn.disabled = false;
+                submitBtn.removeAttribute('aria-busy');
+                submitBtn.textContent = submitBtn.dataset.originalText || 'Submit';
+                delete submitBtn.dataset.originalText;
+              };
+
+              formEl?.addEventListener('submit', (e) => {
+                if (e.defaultPrevented) return;
+                setSubmitLoading(true);
+              });
+
+              window.addEventListener('pageshow', () => setSubmitLoading(false));
 
               syncNameVisibility();
             })();

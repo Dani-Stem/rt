@@ -12,7 +12,8 @@
         >
           <div class="form-field">
             <label for="type">Rating Type</label>
-            <select name="rating_type" id="type" required>
+            <input type="hidden" name="rating_type" value="{{ rating[1] }}" />
+            <select name="rating_type" id="type" required disabled>
               <option value="" disabled>Select a type</option>
               <option value="Artist" {% if rating[1]=='Artist' %}selected{% endif %}>Artist</option>
               <option value="Album" {% if rating[1]=='Album' %}selected{% endif %}>Album</option>
@@ -32,11 +33,35 @@
               readonly
               {% if not _has_type %}disabled{% endif %}
             />
-            <input type="hidden" id="mbid" name="mbid" value="{{ rating[13] if rating|length > 13 else '' }}" />
-            <input type="hidden" id="mb_url" name="mb_url" value="{{ rating[14] if rating|length > 14 else '' }}" />
-            <input type="hidden" id="content_artist" name="content_artist" value="{{ rating[15] if rating|length > 15 else '' }}" />
+            <input type="hidden" id="mbid" name="mbid" value="{{ rating[14] if rating|length > 14 else '' }}" />
+            <input type="hidden" id="mb_url" name="mb_url" value="{{ rating[15] if rating|length > 15 else '' }}" />
+            <input type="hidden" id="content_artist" name="content_artist" value="{{ rating[16] if rating|length > 16 else '' }}" />
           </div>
 
+          <div class="form-field">
+            <label for="extra_link">Link (optional)</label>
+            <input
+              type="url"
+              id="extra_link"
+              name="extra_link"
+              inputmode="url"
+              placeholder="https://..."
+              value="{{ extra_link or '' }}"
+            />
+          </div>
+
+          <div class="form-field">
+            <label for="extra_info">Note (optional)</label>
+            <textarea
+              id="extra_info"
+              name="extra_info"
+              rows="3"
+              cols="40"
+              placeholder="Anything you want to remember about this rating..."
+            >{{ extra_info or '' }}</textarea>
+          </div>
+
+          <!--
           <div class="form-field is-file">
             <label for="rating_image">Image (optional)</label>
             <p class="auth-hint">Examples: album cover, artist pic, single cover.</p>
@@ -58,6 +83,7 @@
             </label>
             {% endif %}
           </div>
+          -->
 
           <input class="modal-toggle" id="mb-modal-toggle" type="checkbox" />
           <div class="modal">
@@ -104,6 +130,13 @@
               const btn = document.getElementById('mb_search_btn');
               const status = document.getElementById('mb_status');
               const resultsEl = document.getElementById('mb_results');
+
+              if (modalToggle) modalToggle.disabled = true;
+              if (qInput) qInput.disabled = true;
+              if (artistInput) artistInput.disabled = true;
+              if (btn) btn.disabled = true;
+
+              return;
 
               const kindFromType = (t) => {
                 const v = (t || '').toLowerCase();
@@ -345,7 +378,16 @@
               });
 
               typeSelect?.addEventListener('change', () => {
-                if (modalToggle?.checked) syncModalUI();
+                if (modalToggle) modalToggle.checked = false;
+                if (nameInput) nameInput.value = '';
+                if (mbidInput) mbidInput.value = '';
+                if (mbUrlInput) mbUrlInput.value = '';
+                if (contentArtistInput) contentArtistInput.value = '';
+                if (qInput) qInput.value = '';
+                if (artistInput) artistInput.value = '';
+                if (status) status.textContent = '';
+                if (resultsEl) resultsEl.innerHTML = '';
+                syncModalUI();
                 syncNameVisibility();
               });
 
@@ -528,6 +570,41 @@
             <a href="/browse" class="btn-cancel">Cancel</a>
           </div>
         </form>
+
+        <script>
+          (() => {
+            const formEl = document.querySelector('form.rating-form');
+            const submitBtn = formEl?.querySelector('button[type="submit"].btn-submit');
+
+            const setSubmitLoading = (isLoading) => {
+              if (!submitBtn) return;
+
+              if (isLoading) {
+                if (!submitBtn.dataset.originalText) {
+                  submitBtn.dataset.originalText = submitBtn.textContent || 'Update';
+                }
+                submitBtn.classList.add('is-loading');
+                submitBtn.disabled = true;
+                submitBtn.setAttribute('aria-busy', 'true');
+                submitBtn.textContent = 'Updating…';
+                return;
+              }
+
+              submitBtn.classList.remove('is-loading');
+              submitBtn.disabled = false;
+              submitBtn.removeAttribute('aria-busy');
+              submitBtn.textContent = submitBtn.dataset.originalText || 'Update';
+              delete submitBtn.dataset.originalText;
+            };
+
+            formEl?.addEventListener('submit', (e) => {
+              if (e.defaultPrevented) return;
+              setSubmitLoading(true);
+            });
+
+            window.addEventListener('pageshow', () => setSubmitLoading(false));
+          })();
+        </script>
     
 {% endblock %}
 

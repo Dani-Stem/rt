@@ -7,6 +7,7 @@ from flask import (
     current_app,
     session,
     jsonify,
+    Response,
 )
 from datetime import datetime, timezone, timedelta
 from urllib.parse import urlsplit, urlunsplit
@@ -43,6 +44,7 @@ from backend.database import (
     update_profile_pic,
     update_profile_info,
     get_profile_pic_by_username,
+    get_profile_pics_by_usernames,
     get_profile_comments as get_profile_comments_db,
     add_profile_comment as add_profile_comment_db,
     update_profile_comment as update_profile_comment_db,
@@ -104,16 +106,65 @@ from backend.database import (
     get_subject_activity_timeseries,
     search_rated_subjects,
     get_subject_overall_summary,
+    get_ratings_for_subject,
+    get_ratings_for_artist_including_works,
+    get_top_rated_subjects,
     get_rating_reactions_summary,
     get_user_rating_reactions,
     toggle_rating_reaction,
     activity_exists,
     get_reaction_counts_for_ratings,
+    get_subject_rating_emoji_counts_for_rating_keys,
+    get_rating_emojis_for_rating_keys,
+    get_top_subject_rating_emojis,
+    strip_artist_features,
+    get_cached_subject_image,
+    set_cached_subject_image,
+    get_rating_extras_by_key,
 )
 
 # Initialize routes with Blueprint
 # Blueprint is what allows the routes to work (@app.route etc.)
 app = Blueprint("main", __name__)
+
+
+_PROXY_IMAGE_HOSTS = {
+    "coverartarchive.org",
+    "archive.org",
+    "s3.us.archive.org",
+    "commons.wikimedia.org",
+    "upload.wikimedia.org",
+}
+
+
+def _is_proxyable_image_url(url: str | None) -> bool:
+    raw = (url or "").strip()
+    if not raw:
+        return False
+    try:
+        parsed = urlsplit(raw)
+    except Exception:
+        return False
+    if (parsed.scheme or "").lower() not in {"http", "https"}:
+        return False
+    host = (parsed.netloc or "").split(":", 1)[0].strip().lower()
+    if not host:
+        return False
+    return host in _PROXY_IMAGE_HOSTS or host.endswith(".archive.org")
+
+
+def _proxied_image_url(url: str | None) -> str | None:
+    raw = (url or "").strip()
+    if not raw:
+        return None
+    if not _is_proxyable_image_url(raw):
+        return raw
+    return "/image-proxy?" + urlencode({"url": raw})
+
+
+@app.app_context_processor
+def inject_image_proxy_helpers():
+    return {"proxied_image_url": _proxied_image_url}
 
 
 # Browse page (list all ratings)
@@ -158,7 +209,7 @@ def browse():
     ratings = raw_ratings[:per_page]
 
     owner_pics = _get_owner_pics_for_ratings(ratings)
-    reactions_map = _build_reactions_map(ratings)
+    reactions_map = _build_subject_rating_emojis_map(ratings)
     percent_map = _build_percent_map(ratings)
 
     return render_template(
@@ -411,7 +462,6 @@ def delete_alert(alert_id: int):
     delete_alert_for_user(alert_id, current_user.id)
     flash("Alert deleted.", "success")
 
-    # Only allow internal redirects
     dest = next_url or "/alerts"
     try:
         parts = urlsplit(dest)
@@ -653,9 +703,62 @@ def playlists_create():
     return redirect("/playlists")
 
 
+@app.route("/analytics")
+def analytics():
+    return render_template("analytics.html")
+
+
 @app.route("/charts")
 def charts():
-    return render_template("charts.html")
+    raw_kind = (request.args.get("kind") or "song").strip().lower()
+    kind = raw_kind if raw_kind in {"song", "album", "artist"} else "song"
+
+    page, per_page, offset = _parse_pagination(
+        default_per_page=25,
+        allowed_per_page=(10, 25, 50, 100),
+    )
+
+    raw_items = get_top_rated_subjects(
+        kind=kind,
+        limit=per_page + 1,
+        offset=offset,
+        min_ratings=1,
+    )
+    has_next = len(raw_items) > per_page
+    items = raw_items[:per_page]
+
+    def _details_url(it: dict) -> str:
+        params: dict[str, str] = {"kind": kind}
+        mbid = (it.get("mbid") or "").strip()
+        name = (it.get("name") or "").strip()
+        artist = (it.get("artist") or "").strip()
+        if mbid:
+            params["mbid"] = mbid
+        if name:
+            params["name"] = name
+        if kind != "artist" and artist:
+            params["artist"] = artist
+        return "/also-rated?" + urlencode(params)
+
+    for it in items or []:
+        try:
+            it["details_url"] = _details_url(it)
+        except Exception:
+            it["details_url"] = "/charts"
+
+    return render_template(
+        "charts.html",
+        kind=kind,
+        items=items or [],
+        rank_offset=offset,
+        pagination=_pagination_context(
+            page=page,
+            per_page=per_page,
+            has_next=has_next,
+            item_count=len(items),
+            options=[10, 25, 50, 100],
+        ),
+    )
 
 
 @app.route("/api/charts/subjects", methods=["GET"])
@@ -671,6 +774,27 @@ def charts_subjects_api():
     limit = max(1, min(50, limit))
 
     items = search_rated_subjects(kind=kind, q=q, artist=artist, limit=limit)
+    return jsonify({"ok": True, "kind": kind, "items": items})
+
+
+@app.route("/api/charts/top", methods=["GET"])
+def charts_top_api():
+    raw_kind = (request.args.get("kind") or "song").strip().lower()
+    kind = raw_kind if raw_kind in {"song", "album", "artist"} else "song"
+
+    try:
+        limit = int((request.args.get("limit") or "25").strip())
+    except ValueError:
+        limit = 25
+    limit = max(1, min(100, limit))
+
+    try:
+        min_ratings = int((request.args.get("min_ratings") or "1").strip())
+    except ValueError:
+        min_ratings = 1
+    min_ratings = max(1, min(50, min_ratings))
+
+    items = get_top_rated_subjects(kind=kind, limit=limit, min_ratings=min_ratings)
     return jsonify({"ok": True, "kind": kind, "items": items})
 
 
@@ -1245,6 +1369,18 @@ def rating_detail(rating_key):
     rating_image_url = rating[-1] if len(rating) > 13 else None
     subject_artist = (rating[-2] if len(rating) > 14 else None) or None
     subject_mbid = (rating[-4] if len(rating) > 16 else None) or None
+    rating_emoji = (rating[-5] if len(rating) > 17 else None) or None
+
+    extra_link, extra_info = get_rating_extras_by_key(rating_key)
+
+    subject_all_ratings_url = f"/rating/{int(rating_key)}/also-rated"
+    artist_all_ratings_url = None
+    rating_type_lc = (rating[1] or "").strip().lower()
+    if rating_type_lc in {"song", "album"} and subject_artist:
+        primary_artist = strip_artist_features(subject_artist)
+        artist_all_ratings_url = "/also-rated?" + urlencode(
+            {"kind": "artist", "name": str(primary_artist or subject_artist)}
+        )
 
     owner = get_rating_owner(rating_key)
 
@@ -1275,14 +1411,7 @@ def rating_detail(rating_key):
             metadata={"owner": owner},
         )
 
-    totals = (
-        get_category_vote_totals_for_ratings([int(rating_key)]).get(int(rating_key))
-        or {}
-    )
-    up = int(totals.get("up") or 0)
-    down = int(totals.get("down") or 0)
-    total = up + down
-    percent = int(round((up / total) * 100)) if total > 0 else None
+    percent = _build_percent_map([rating]).get(int(rating_key))
 
     reaction_summary = get_rating_reactions_summary(rating_key)
     user_reactions = {}
@@ -1297,6 +1426,9 @@ def rating_detail(rating_key):
     return render_template(
         "rating.html",
         rating=rating,
+        rating_emoji=rating_emoji,
+        extra_link=extra_link,
+        extra_info=extra_info,
         owner=owner,
         owner_pic=owner_pic,
         percent=percent,
@@ -1304,6 +1436,8 @@ def rating_detail(rating_key):
         rating_image_url=rating_image_url,
         subject_artist=subject_artist,
         subject_mbid=subject_mbid,
+        subject_all_ratings_url=subject_all_ratings_url,
+        artist_all_ratings_url=artist_all_ratings_url,
         category_vote_summary=category_vote_summary,
         user_category_votes=user_category_votes,
         can_category_vote=current_user.is_authenticated,
@@ -1326,25 +1460,79 @@ def rating_also_rated(rating_key: int):
     rating_name = (rating[2] or "").strip()
     mbid = (rating[-4] if len(rating) > 16 else None) or None
     content_artist = (rating[-2] if len(rating) > 14 else None) or None
+    artist_all_ratings_url = None
+    if (rating_type or "").strip().lower() in {"song", "album"} and content_artist:
+        primary_artist = strip_artist_features(content_artist)
+        artist_all_ratings_url = "/also-rated?" + urlencode(
+            {"kind": "artist", "name": str(primary_artist or content_artist)}
+        )
+
+    summary = get_subject_overall_summary(
+        mbid=mbid,
+        rating_type=rating_type,
+        rating_name=rating_name,
+        content_artist=content_artist,
+    )
+
+    allowed_tabs = {"all", "artist", "albums", "songs"}
+    raw_tab = (request.args.get("tab") or "all").strip().lower()
+    active_tab = raw_tab if raw_tab in allowed_tabs else "all"
+    if (rating_type or "").strip().lower() != "artist":
+        active_tab = "all"
 
     page, per_page, offset = _parse_pagination(default_per_page=20)
-    users = get_users_who_rated_same_subject(
-        exclude_rating_key=int(rating_key),
+    limit = per_page + 1
+
+    if (rating_type or "").strip().lower() == "artist":
+        raw_ratings = get_ratings_for_artist_including_works(
+            artist_name=rating_name,
+            scope=active_tab,
+            limit=limit,
+            offset=offset,
+            order="recent",
+        )
+    else:
+        raw_ratings = get_ratings_for_subject(
+            exclude_rating_key=0,
+            mbid=mbid,
+            rating_type=rating_type,
+            rating_name=rating_name,
+            content_artist=content_artist,
+            limit=limit,
+            offset=offset,
+            order="recent",
+        )
+
+    if (rating_type or "").strip().lower() == "artist" and summary:
+        fetched = _cached_artist_image_url(artist_name=rating_name, artist_mbid=mbid)
+        if fetched:
+            summary["image_url"] = fetched
+
+    has_next = len(raw_ratings) > per_page
+    ratings = raw_ratings[:per_page]
+
+    tab_urls = None
+    if (rating_type or "").strip().lower() == "artist":
+        base = f"/rating/{int(rating_key)}/also-rated"
+        common_params: dict[str, str] = {}
+        if per_page:
+            common_params["per_page"] = str(int(per_page))
+
+        tab_urls = {}
+        for t in ("all", "artist", "albums", "songs"):
+            params = dict(common_params)
+            if t != "all":
+                params["tab"] = t
+            tab_urls[t] = base + ("?" + urlencode(params) if params else "")
+    owner_pics = _get_owner_pics_for_ratings(ratings)
+    percent_map = _build_percent_map(ratings)
+    rating_emoji_map = get_rating_emojis_for_rating_keys([r[0] for r in ratings])
+    subject_emojis = get_top_subject_rating_emojis(
         mbid=mbid,
         rating_type=rating_type,
         rating_name=rating_name,
         content_artist=content_artist,
-        limit=per_page + 1,
-        offset=offset,
-    )
-    has_next = len(users) > per_page
-    users = users[:per_page]
-    total = count_users_who_rated_same_subject(
-        exclude_rating_key=int(rating_key),
-        mbid=mbid,
-        rating_type=rating_type,
-        rating_name=rating_name,
-        content_artist=content_artist,
+        limit=3,
     )
 
     return render_template(
@@ -1355,51 +1543,121 @@ def rating_also_rated(rating_key: int):
             "name": rating_name,
             "artist": content_artist,
         },
-        users=users,
-        total_count=total,
+        artist_all_ratings_url=artist_all_ratings_url,
+        summary=summary,
+        ratings=ratings,
+        active_tab=active_tab,
+        tab_urls=tab_urls,
+        owner_pics=owner_pics,
+        percent_map=percent_map,
+        rating_emoji_map=rating_emoji_map,
+        subject_emojis=subject_emojis,
         pagination=_pagination_context(
             page=page,
             per_page=per_page,
             has_next=has_next,
-            item_count=len(users),
+            item_count=len(ratings),
         ),
     )
 
 
 @app.route("/also-rated")
 def also_rated_subject():
-    rating_image_url = (request.args.get("image") or "").strip()
-    rating_type = (request.args.get("kind") or "").strip()
+    raw_kind = (request.args.get("kind") or "").strip().lower()
+    kind = raw_kind if raw_kind in {"song", "album", "artist"} else ""
+    rating_type = {"song": "Song", "album": "Album", "artist": "Artist"}.get(kind)
     mbid = (request.args.get("mbid") or "").strip() or None
     rating_name = (request.args.get("name") or "").strip()
     content_artist = (request.args.get("artist") or "").strip() or None
+    artist_all_ratings_url = None
 
-    if rating_type not in {"song", "album", "artist"}:
+    if not rating_type:
         flash("Invalid type.", "error")
-        return redirect("/charts")
+        return redirect("/analytics")
 
     if not rating_name and not mbid:
         flash("Missing subject.", "error")
-        return redirect("/charts")
+        return redirect("/analytics")
+
+    if kind == "artist":
+        content_artist = None
+        rating_name = strip_artist_features(rating_name)
+    elif kind in {"song", "album"} and content_artist:
+        primary_artist = strip_artist_features(content_artist)
+        artist_all_ratings_url = "/also-rated?" + urlencode(
+            {"kind": "artist", "name": str(primary_artist or content_artist)}
+        )
+
+    summary = get_subject_overall_summary(
+        mbid=mbid,
+        rating_type=rating_type,
+        rating_name=rating_name,
+        content_artist=content_artist,
+    )
+
+    allowed_tabs = {"all", "artist", "albums", "songs"}
+    raw_tab = (request.args.get("tab") or "all").strip().lower()
+    active_tab = raw_tab if raw_tab in allowed_tabs else "all"
+    if kind != "artist":
+        active_tab = "all"
 
     page, per_page, offset = _parse_pagination(default_per_page=20)
-    users = get_users_who_rated_same_subject(
-        exclude_rating_key=0,
+    limit = per_page + 1
+
+    if kind == "artist":
+        raw_ratings = get_ratings_for_artist_including_works(
+            artist_name=rating_name,
+            scope=active_tab,
+            limit=limit,
+            offset=offset,
+            order="recent",
+        )
+    else:
+        raw_ratings = get_ratings_for_subject(
+            exclude_rating_key=0,
+            mbid=mbid,
+            rating_type=rating_type,
+            rating_name=rating_name,
+            content_artist=content_artist,
+            limit=limit,
+            offset=offset,
+            order="recent",
+        )
+
+    if kind == "artist" and summary:
+        fetched = _cached_artist_image_url(artist_name=rating_name, artist_mbid=mbid)
+        if fetched:
+            summary["image_url"] = fetched
+
+    has_next = len(raw_ratings) > per_page
+    ratings = raw_ratings[:per_page]
+
+    tab_urls = None
+    if kind == "artist":
+        base = "/also-rated"
+        common_params: dict[str, str] = {"kind": "artist"}
+        if mbid:
+            common_params["mbid"] = str(mbid)
+        if rating_name:
+            common_params["name"] = str(rating_name)
+        if per_page:
+            common_params["per_page"] = str(int(per_page))
+
+        tab_urls = {}
+        for t in ("all", "artist", "albums", "songs"):
+            params = dict(common_params)
+            if t != "all":
+                params["tab"] = t
+            tab_urls[t] = base + "?" + urlencode(params)
+    owner_pics = _get_owner_pics_for_ratings(ratings)
+    percent_map = _build_percent_map(ratings)
+    rating_emoji_map = get_rating_emojis_for_rating_keys([r[0] for r in ratings])
+    subject_emojis = get_top_subject_rating_emojis(
         mbid=mbid,
         rating_type=rating_type,
         rating_name=rating_name,
         content_artist=content_artist,
-        limit=per_page + 1,
-        offset=offset,
-    )
-    has_next = len(users) > per_page
-    users = users[:per_page]
-    total = count_users_who_rated_same_subject(
-        exclude_rating_key=0,
-        mbid=mbid,
-        rating_type=rating_type,
-        rating_name=rating_name,
-        content_artist=content_artist,
+        limit=3,
     )
 
     return render_template(
@@ -1408,16 +1666,22 @@ def also_rated_subject():
         subject={
             "type": rating_type,
             "name": rating_name,
-            "artist": content_artist,\
-            "image": rating_image_url
+            "artist": content_artist,
         },
-        users=users,
-        total_count=total,
+        artist_all_ratings_url=artist_all_ratings_url,
+        summary=summary,
+        ratings=ratings,
+        active_tab=active_tab,
+        tab_urls=tab_urls,
+        owner_pics=owner_pics,
+        percent_map=percent_map,
+        rating_emoji_map=rating_emoji_map,
+        subject_emojis=subject_emojis,
         pagination=_pagination_context(
             page=page,
             per_page=per_page,
             has_next=has_next,
-            item_count=len(users),
+            item_count=len(ratings),
         ),
     )
 
@@ -1742,9 +2006,12 @@ def add():
     if request.method == "POST":
         rating_type = request.form.get("rating_type", "").strip()
         rating_name = request.form.get("rating_name", "").strip()
+        rating_emoji = (request.form.get("rating_emoji") or "").strip()
         mbid = (request.form.get("mbid") or "").strip()
         mb_url = (request.form.get("mb_url") or "").strip()
         content_artist = (request.form.get("content_artist") or "").strip()
+        extra_link = (request.form.get("extra_link") or "").strip()
+        extra_info = (request.form.get("extra_info") or "").strip()
         lyrics_rating = request.form.get("lyrics", "").strip()
         lyrics_reason = request.form.get("lyrics_reason", "").strip()
         beat_rating = request.form.get("beat", "").strip()
@@ -1765,6 +2032,8 @@ def add():
             missing.append("Rating Type")
         if not rating_name:
             missing.append("Name")
+        if not rating_emoji:
+            missing.append("Emoji")
         if not lyrics_rating:
             missing.append("Lyrics")
         if not beat_rating:
@@ -1780,9 +2049,12 @@ def add():
             session["add_form_draft"] = {
                 "rating_type": rating_type,
                 "rating_name": rating_name,
+                "rating_emoji": rating_emoji,
                 "mbid": mbid,
                 "mb_url": mb_url,
                 "content_artist": content_artist,
+                "extra_link": extra_link,
+                "extra_info": extra_info,
                 "lyrics": lyrics_rating,
                 "lyrics_reason": lyrics_reason,
                 "beat": beat_rating,
@@ -1806,9 +2078,12 @@ def add():
                 session["add_form_draft"] = {
                     "rating_type": rating_type,
                     "rating_name": rating_name,
+                    "rating_emoji": rating_emoji,
                     "mbid": mbid,
                     "mb_url": mb_url,
                     "content_artist": content_artist,
+                    "extra_link": extra_link,
+                    "extra_info": extra_info,
                     "lyrics": lyrics_rating,
                     "lyrics_reason": lyrics_reason,
                     "beat": beat_rating,
@@ -1854,6 +2129,7 @@ def add():
             rating_key = add_rating(
                 rating_type,
                 rating_name,
+                rating_emoji or None,
                 lyrics_rating,
                 lyrics_reason,
                 beat_rating,
@@ -1869,6 +2145,8 @@ def add():
                 mbid or None,
                 mb_url or None,
                 content_artist or None,
+                extra_link or None,
+                extra_info or None,
             )
             category = _category_from_rating_type(rating_type)
             add_activity(
@@ -1885,7 +2163,12 @@ def add():
         return redirect("/browse")
 
     draft = session.pop("add_form_draft", None)
-    return render_template("add.html", form_action="/add", draft=draft or {})
+    return render_template(
+        "add.html",
+        form_action="/add",
+        draft=draft or {},
+        reaction_emojis=REACTION_EMOJIS,
+    )
 
 
 def _build_profile_comments(profile_user_id):
@@ -2402,6 +2685,9 @@ def edit(rating_key):
     rating = get_rating_by_key(rating_key)
     if not rating:
         return redirect("/browse")
+
+    current_extra_link, current_extra_info = get_rating_extras_by_key(rating_key)
+
     if request.method == "POST":
         current_rating_type = (rating[1] or "").strip()
         current_rating_name = (rating[2] or "").strip()
@@ -2425,6 +2711,8 @@ def edit(rating_key):
         mbid = (request.form.get("mbid") or "").strip() or None
         mb_url = (request.form.get("mb_url") or "").strip() or None
         content_artist = (request.form.get("content_artist") or "").strip() or None
+        extra_link = (request.form.get("extra_link") or "").strip() or None
+        extra_info = (request.form.get("extra_info") or "").strip() or None
         lyrics_rating = request.form.get("lyrics", "").strip()
         lyrics_reason = request.form.get("lyrics_reason", "").strip()
         beat_rating = request.form.get("beat", "").strip()
@@ -2499,6 +2787,8 @@ def edit(rating_key):
                 (mbid or None) != (current_mbid or None),
                 (mb_url or None) != (current_mb_url or None),
                 (content_artist or None) != (current_content_artist or None),
+                (extra_link or None) != (current_extra_link or None),
+                (extra_info or None) != (current_extra_info or None),
             ]
         )
 
@@ -2524,6 +2814,8 @@ def edit(rating_key):
                 mbid,
                 mb_url,
                 content_artist,
+                extra_link,
+                extra_info,
             )
             category = _category_from_rating_type(rating_type)
             add_activity(
@@ -2541,6 +2833,8 @@ def edit(rating_key):
         "edit.html",
         rating=rating,
         form_action=f"/edit/{rating_key}",
+        extra_link=current_extra_link or "",
+        extra_info=current_extra_info or "",
     )
 
 
@@ -2640,6 +2934,55 @@ def _caa_throttle() -> None:
         if wait > 0:
             time.sleep(min(wait, min_interval + 0.25))
         _CAA_LAST_CALL_AT = time.time()
+
+
+@app.route("/image-proxy")
+def image_proxy():
+    raw_url = (request.args.get("url") or "").strip()
+    if not _is_proxyable_image_url(raw_url):
+        return ("", 404)
+
+    parsed = urlsplit(raw_url)
+    safe_url = urlunsplit(
+        (
+            parsed.scheme,
+            parsed.netloc,
+            parsed.path,
+            parsed.query,
+            "",
+        )
+    )
+
+    host = (parsed.netloc or "").split(":", 1)[0].strip().lower()
+    headers = {
+        "User-Agent": _musicbrainz_user_agent(),
+        "Accept": "image/avif,image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8",
+    }
+
+    try:
+        if host == "coverartarchive.org":
+            _caa_throttle()
+        resp = requests.get(safe_url, headers=headers, timeout=20)
+    except requests.RequestException:
+        return ("", 502)
+
+    if resp.status_code != 200:
+        return ("", resp.status_code)
+
+    content_type = (resp.headers.get("Content-Type") or "application/octet-stream").strip()
+    out = Response(resp.content, status=200, content_type=content_type)
+    cache_control = resp.headers.get("Cache-Control")
+    if cache_control:
+        out.headers["Cache-Control"] = cache_control
+    else:
+        out.headers["Cache-Control"] = "public, max-age=86400"
+    etag = resp.headers.get("ETag")
+    if etag:
+        out.headers["ETag"] = etag
+    last_modified = resp.headers.get("Last-Modified")
+    if last_modified:
+        out.headers["Last-Modified"] = last_modified
+    return out
 
 
 def _wikidata_throttle() -> None:
@@ -2878,6 +3221,61 @@ def _artist_image_url(artist_mbid: str) -> str | None:
     return f"https://commons.wikimedia.org/wiki/Special:FilePath/{safe}?width={width}"
 
 
+def _cached_artist_image_url(
+    *, artist_name: str, artist_mbid: str | None
+) -> str | None:
+    primary = strip_artist_features(artist_name)
+    if not primary:
+        return None
+
+    mbid = (artist_mbid or "").strip() or None
+    key_by_mbid = f"artist_mbid:{mbid}" if mbid else None
+    key_by_name = f"artist_name:{primary.lower()}"
+
+    if key_by_mbid:
+        cached = get_cached_subject_image(key_by_mbid, max_age_days=45)
+        if cached:
+            return cached
+    cached = get_cached_subject_image(key_by_name, max_age_days=45)
+    if cached:
+        return cached
+
+    mbid_to_use = mbid
+    if not mbid_to_use:
+        try:
+            items, _ = _mb_search("artist", primary, limit=5, offset=0)
+        except Exception:
+            items = []
+
+        def _norm(s: str) -> str:
+            return " ".join((s or "").strip().lower().split())
+
+        want = _norm(primary)
+        best = None
+        for it in items or []:
+            title = it.get("title") or ""
+            if _norm(title) == want:
+                best = it
+                break
+        if not best and items:
+            best = max(items, key=lambda it: int(it.get("score") or 0))
+        mbid_to_use = (best or {}).get("mbid") or None
+
+    if not mbid_to_use:
+        return None
+
+    url = _artist_image_url(mbid_to_use)
+    if not url:
+        return None
+
+    # Cache under both keys for better hit rate.
+    set_cached_subject_image(key_by_name, url)
+    set_cached_subject_image(f"artist_mbid:{mbid_to_use}", url)
+    if key_by_mbid:
+        set_cached_subject_image(key_by_mbid, url)
+    return url
+
+
 def _artist_credit_to_string(credit) -> str:
     if not credit:
         return ""
@@ -3105,7 +3503,7 @@ def home():
     has_next = len(raw_ratings) > per_page
     ratings = raw_ratings[:per_page]
     owner_pics = _get_owner_pics_for_ratings(ratings)
-    reactions_map = _build_reactions_map(ratings)
+    reactions_map = _build_subject_rating_emojis_map(ratings)
     percent_map = _build_percent_map(ratings)
 
     return render_template(
@@ -3235,10 +3633,10 @@ def _build_reactions_map(ratings):
     return reactions_map
 
 
-def _build_percent_map(ratings):
-    percent_map = {}
+def _build_subject_rating_emojis_map(ratings):
+    out: dict[int, list[str]] = {}
     if not ratings:
-        return percent_map
+        return out
 
     rating_keys: list[int] = []
     for rating in ratings:
@@ -3247,13 +3645,67 @@ def _build_percent_map(ratings):
         except (TypeError, ValueError, IndexError):
             continue
 
-    totals_map = get_category_vote_totals_for_ratings(rating_keys)
+    counts_map = get_subject_rating_emoji_counts_for_rating_keys(rating_keys)
     for rk in rating_keys:
-        totals = totals_map.get(int(rk)) or {}
-        up = int(totals.get("up") or 0)
-        down = int(totals.get("down") or 0)
-        total = up + down
-        percent_map[int(rk)] = int(round((up / total) * 100)) if total > 0 else None
+        counts = counts_map.get(int(rk), []) or []
+        counts_sorted = sorted(
+            counts,
+            key=lambda t: (-int(t[1] or 0), str(t[0] or "")),
+        )
+        picked: list[str] = []
+        for emoji, _cnt in counts_sorted:
+            em = str(emoji or "").strip()
+            if not em:
+                continue
+            picked.append(em)
+            if len(picked) >= 3:
+                break
+        out[int(rk)] = picked
+    return out
+
+
+def _build_percent_map(ratings):
+    percent_map = {}
+    if not ratings:
+        return percent_map
+
+    def _to_score(v):
+        try:
+            n = int(v)
+        except (TypeError, ValueError):
+            return None
+        return n if 1 <= n <= 10 else None
+
+    def _overall_percent_from_rating_tuple(rating) -> int | None:
+        if not rating:
+            return None
+
+        cand1: list[int] = []
+        if len(rating) >= 8:
+            for idx in (3, 4, 5, 6, 7):
+                s = _to_score(rating[idx])
+                if s is not None:
+                    cand1.append(s)
+
+        cand2: list[int] = []
+        if len(rating) >= 12:
+            for idx in (3, 5, 7, 9, 11):
+                s = _to_score(rating[idx])
+                if s is not None:
+                    cand2.append(s)
+
+        scores = cand2 if len(cand2) > len(cand1) else cand1
+        if not scores:
+            return None
+        avg = sum(scores) / len(scores)
+        return int(round(avg * 10))
+
+    for rating in ratings:
+        try:
+            rk = int(rating[0])
+        except (TypeError, ValueError, IndexError):
+            continue
+        percent_map[rk] = _overall_percent_from_rating_tuple(rating)
 
     return percent_map
 
@@ -3271,7 +3723,6 @@ def _pic_exists(rel_path: str) -> bool:
         return False
     rel_path = rel_path.strip()
 
-    # New default uploads URL
     upload_url_prefix = (
         current_app.config.get("UPLOAD_URL_PREFIX") or "/uploads"
     ).rstrip("/")
@@ -3280,7 +3731,7 @@ def _pic_exists(rel_path: str) -> bool:
             Path(current_app.config.get("UPLOAD_FOLDER"))
             / rel_path[len(upload_url_prefix) + 1 :]
         )
-    # Backwards compatible stored URLs
+
     elif rel_path.startswith("/static/uploads/"):
         fs_path = (
             Path(current_app.config.get("UPLOAD_FOLDER"))
@@ -3297,11 +3748,17 @@ def _get_owner_pics_for_ratings(ratings):
     if not ratings:
         return {}
 
-    owner_usernames = {rating[8] for rating in ratings}
+    owner_usernames = {
+        (rating[8] or "").strip()
+        for rating in ratings
+        if len(rating) > 8 and (rating[8] or "").strip()
+    }
+
+    raw_owner_pics = get_profile_pics_by_usernames(owner_usernames)
 
     owner_pics = {}
     for username in owner_usernames:
-        picture_path = get_profile_pic_by_username(username)
+        picture_path = raw_owner_pics.get(username)
         if not _pic_exists(picture_path):
             picture_path = None
         owner_pics[username] = picture_path
@@ -3386,7 +3843,7 @@ def _parse_pagination(
     default_per_page: int = 10,
     allowed_per_page: tuple[int, ...] = (10, 20, 30, 50, 100),
 ) -> tuple[int, int, int]:
-    """Returns (page, per_page, offset)."""
+
     raw_page = (request.args.get("page") or "1").strip()
     raw_per_page_arg = request.args.get("per_page")
     raw_per_page = (raw_per_page_arg or "").strip()
@@ -3431,8 +3888,12 @@ def _pagination_context(
     has_next: bool,
     item_count: int,
     min_items_to_show: int = 10,
+    options: list[int] | None = None,
 ):
     args = request.args.to_dict(flat=True)
+
+    if options is None:
+        options = [10, 20, 30, 50, 100]
 
     def _url_for_page(target_page: int) -> str:
         next_args = dict(args)
@@ -3450,7 +3911,7 @@ def _pagination_context(
     return {
         "page": page,
         "per_page": per_page,
-        "options": [10, 20, 30, 50, 100],
+        "options": options,
         "other_args": other_args,
         "prev_url": prev_url,
         "next_url": next_url,

@@ -451,8 +451,6 @@
       el.addEventListener('input', () => autoResize(el));
     });
 
-    // Sidebar is static and updates on page reload (no SSE/polling).
-
     const updateUsernamePills = () => {
       const pills = document.querySelectorAll('.alert-username');
       pills.forEach((pill) => {

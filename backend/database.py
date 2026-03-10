@@ -13,6 +13,120 @@ def get_db_connection():
     return sqlite3.connect(DB_PATH)
 
 
+def strip_artist_features(artist_name: str) -> str:
+    v = (artist_name or "").strip()
+    if not v:
+        return ""
+
+    v = re.sub(r"\s+", " ", v)
+    lower_v = v.lower()
+
+    markers = (
+        "(feat",
+        "[feat",
+        "(ft",
+        "[ft",
+        "(featuring",
+        "[featuring",
+        " feat.",
+        " feat ",
+        " ft.",
+        " ft ",
+        " featuring ",
+        " with ",
+        " w/ ",
+    )
+
+    cut = None
+    for m in markers:
+        idx = lower_v.find(m)
+        if idx == -1:
+            continue
+        if cut is None or idx < cut:
+            cut = idx
+
+    if cut is None:
+        return v
+
+    v = v[:cut]
+    v = v.rstrip(" ,-/\u2013\u2014([{")
+    return v.strip()
+
+
+def get_cached_subject_image(cache_key: str, *, max_age_days: int = 30) -> str | None:
+    key = (cache_key or "").strip()
+    if not key:
+        return None
+
+    try:
+        max_age_days_i = int(max_age_days)
+    except (TypeError, ValueError):
+        max_age_days_i = 30
+    max_age_days_i = max(1, min(365, max_age_days_i))
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute(
+            "SELECT image_url, updated_at FROM subject_image_cache WHERE cache_key = ? LIMIT 1",
+            (key,),
+        )
+        row = cur.fetchone()
+    except sqlite3.Error:
+        row = None
+    finally:
+        conn.close()
+
+    if not row:
+        return None
+
+    image_url, updated_at = row
+    image_url = (image_url or "").strip() or None
+    if not image_url:
+        return None
+
+    updated_at = (updated_at or "").strip()
+    if not updated_at:
+        return image_url
+
+    try:
+        ts = datetime.fromisoformat(updated_at)
+        if ts.tzinfo is None:
+            ts = ts.replace(tzinfo=timezone.utc)
+    except (TypeError, ValueError):
+        return image_url
+
+    age_days = (datetime.now(timezone.utc) - ts).total_seconds() / (24 * 3600)
+    if age_days > max_age_days_i:
+        return None
+
+    return image_url
+
+
+def set_cached_subject_image(cache_key: str, image_url: str) -> None:
+    key = (cache_key or "").strip()
+    url = (image_url or "").strip()
+    if not key or not url:
+        return
+
+    now = datetime.now(timezone.utc).isoformat()
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute(
+            "INSERT OR REPLACE INTO subject_image_cache (cache_key, image_url, updated_at) VALUES (?, ?, ?)",
+            (key, url, now),
+        )
+        conn.commit()
+    except sqlite3.Error:
+        try:
+            conn.rollback()
+        except Exception:
+            pass
+    finally:
+        conn.close()
+
+
 ###############################################
 # Bulletin
 ###############################################
@@ -40,7 +154,14 @@ def add_bulletin_post(
         INSERT INTO bulletin (created_by_user_id, created_by, title, message, created_at, type)
         VALUES (?,?,?,?,?,?)
         """,
-        (int(created_by_user_id), created_by, title or None, message, created_at, post_type),
+        (
+            int(created_by_user_id),
+            created_by,
+            title or None,
+            message,
+            created_at,
+            post_type,
+        ),
     )
     bulletin_key = cur.lastrowid
     conn.commit()
@@ -80,9 +201,15 @@ def get_bulletin_feed_for_user(user_id: int, limit: int = 15, offset: int = 0):
 
     items = []
     for row in rows:
-        bulletin_key, created_by, title, message, created_at, created_by_user_id, post_type = (
-            row
-        )
+        (
+            bulletin_key,
+            created_by,
+            title,
+            message,
+            created_at,
+            created_by_user_id,
+            post_type,
+        ) = row
         items.append(
             {
                 "bulletin_key": bulletin_key,
@@ -375,6 +502,168 @@ def search_rated_subjects(
     return out
 
 
+def get_top_rated_subjects(
+    *,
+    kind: str,
+    limit: int = 25,
+    offset: int = 0,
+    min_ratings: int = 1,
+) -> list[dict[str, Any]]:
+    kind = (kind or "").strip().lower()
+    try:
+        limit = int(limit)
+    except (TypeError, ValueError):
+        limit = 25
+
+    limit = max(1, min(500, limit))
+
+    try:
+        offset = int(offset)
+    except (TypeError, ValueError):
+        offset = 0
+    offset = max(0, offset)
+
+    try:
+        min_ratings = int(min_ratings)
+    except (TypeError, ValueError):
+        min_ratings = 1
+    min_ratings = max(1, min(50, min_ratings))
+
+    rating_type = {"song": "Song", "album": "Album", "artist": "Artist"}.get(kind)
+    if not rating_type:
+        return []
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    if kind == "artist":
+        cur.execute(
+            """
+            SELECT
+                rating_name,
+                '' AS artist,
+                COUNT(1) AS rating_count,
+                COUNT(DISTINCT LOWER(TRIM(user))) AS user_count,
+                AVG(CAST(lyrics_rating AS REAL)) AS avg_lyrics,
+                AVG(CAST(beat_rating AS REAL)) AS avg_beat,
+                AVG(CAST(flow_rating AS REAL)) AS avg_flow,
+                AVG(CAST(melody_rating AS REAL)) AS avg_melody,
+                AVG(CAST(cohesive_rating AS REAL)) AS avg_cohesive,
+                MAX(mbid) AS mbid,
+                MAX(image_url) AS image_url
+            FROM ratings
+            WHERE LOWER(TRIM(rating_type)) = LOWER(TRIM(?))
+            GROUP BY LOWER(TRIM(rating_name))
+            HAVING COUNT(1) >= ?
+            ORDER BY (
+                (COALESCE(AVG(CAST(lyrics_rating AS REAL)), 0)
+                 + COALESCE(AVG(CAST(beat_rating AS REAL)), 0)
+                 + COALESCE(AVG(CAST(flow_rating AS REAL)), 0)
+                 + COALESCE(AVG(CAST(melody_rating AS REAL)), 0)
+                 + COALESCE(AVG(CAST(cohesive_rating AS REAL)), 0))
+                / 5.0
+            ) DESC,
+            rating_count DESC,
+            rating_name COLLATE NOCASE ASC
+            LIMIT ?
+            OFFSET ?
+            """,
+            (rating_type, int(min_ratings), int(limit), int(offset)),
+        )
+    else:
+        cur.execute(
+            """
+            SELECT
+                rating_name,
+                COALESCE(content_info_artist, '') AS artist,
+                COUNT(1) AS rating_count,
+                COUNT(DISTINCT LOWER(TRIM(user))) AS user_count,
+                AVG(CAST(lyrics_rating AS REAL)) AS avg_lyrics,
+                AVG(CAST(beat_rating AS REAL)) AS avg_beat,
+                AVG(CAST(flow_rating AS REAL)) AS avg_flow,
+                AVG(CAST(melody_rating AS REAL)) AS avg_melody,
+                AVG(CAST(cohesive_rating AS REAL)) AS avg_cohesive,
+                MAX(mbid) AS mbid,
+                MAX(image_url) AS image_url
+            FROM ratings
+            WHERE LOWER(TRIM(rating_type)) = LOWER(TRIM(?))
+            GROUP BY LOWER(TRIM(rating_name)), LOWER(TRIM(COALESCE(content_info_artist, '')))
+            HAVING COUNT(1) >= ?
+            ORDER BY (
+                (COALESCE(AVG(CAST(lyrics_rating AS REAL)), 0)
+                 + COALESCE(AVG(CAST(beat_rating AS REAL)), 0)
+                 + COALESCE(AVG(CAST(flow_rating AS REAL)), 0)
+                 + COALESCE(AVG(CAST(melody_rating AS REAL)), 0)
+                 + COALESCE(AVG(CAST(cohesive_rating AS REAL)), 0))
+                / 5.0
+            ) DESC,
+            rating_count DESC,
+            rating_name COLLATE NOCASE ASC
+            LIMIT ?
+            OFFSET ?
+            """,
+            (rating_type, int(min_ratings), int(limit), int(offset)),
+        )
+
+    rows = cur.fetchall()
+    conn.close()
+
+    def _round(v: Any) -> float | None:
+        try:
+            return round(float(v), 2) if v is not None else None
+        except (TypeError, ValueError):
+            return None
+
+    out: list[dict[str, Any]] = []
+    for (
+        name,
+        artist,
+        rating_count,
+        user_count,
+        avg_lyrics,
+        avg_beat,
+        avg_flow,
+        avg_melody,
+        avg_cohesive,
+        mbid,
+        image_url,
+    ) in (
+        rows or []
+    ):
+        r_lyrics = _round(avg_lyrics)
+        r_beat = _round(avg_beat)
+        r_flow = _round(avg_flow)
+        r_melody = _round(avg_melody)
+        r_cohesive = _round(avg_cohesive)
+
+        components = [
+            v for v in (r_lyrics, r_beat, r_flow, r_melody, r_cohesive) if v is not None
+        ]
+        overall_avg = (
+            round(sum(components) / len(components), 2) if components else None
+        )
+        overall_pct = round(overall_avg * 10) if overall_avg is not None else None
+
+        out.append(
+            {
+                "name": name or "",
+                "artist": artist or "",
+                "rating_count": int(rating_count or 0),
+                "user_count": int(user_count or 0),
+                "overall_avg": overall_avg,
+                "overall_pct": int(overall_pct) if overall_pct is not None else None,
+                "avg_lyrics": r_lyrics,
+                "avg_beat": r_beat,
+                "avg_flow": r_flow,
+                "avg_melody": r_melody,
+                "avg_cohesive": r_cohesive,
+                "mbid": (mbid or "").strip() or None,
+                "image_url": (image_url or "").strip() or None,
+            }
+        )
+    return out
+
+
 # Get all ratings
 def get_ratings(limit: int = 500, offset: int = 0, order: str = "recent"):
     order = (order or "").strip().lower()
@@ -437,12 +726,48 @@ def get_rating_by_key(rating_key):
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute(
-        "SELECT rating_key, rating_type, rating_name, lyrics_rating, lyrics_reason, beat_rating, beat_reason, flow_rating, flow_reason, melody_rating, melody_reason, cohesive_rating, cohesive_reason, mbid, mb_url, content_info_artist, image_url FROM ratings WHERE rating_key = ?",
+        "SELECT rating_key, rating_type, rating_name, lyrics_rating, lyrics_reason, beat_rating, beat_reason, flow_rating, flow_reason, melody_rating, melody_reason, cohesive_rating, cohesive_reason, rating_emoji, mbid, mb_url, content_info_artist, image_url FROM ratings WHERE rating_key = ?",
         (rating_key,),
     )
     row = cur.fetchone()
     conn.close()
     return row
+
+
+def get_rating_emojis_for_rating_keys(
+    rating_keys: list[int],
+) -> dict[int, str]:
+    keys = [int(k) for k in (rating_keys or []) if k is not None]
+    if not keys:
+        return {}
+
+    keys = sorted(set(keys))
+    placeholders = ",".join(["?"] * len(keys))
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute(
+        f"""
+        SELECT rating_key, rating_emoji
+        FROM ratings
+        WHERE rating_key IN ({placeholders})
+        """,
+        tuple(keys),
+    )
+    rows = cur.fetchall()
+    conn.close()
+
+    out: dict[int, str] = {}
+    for rating_key, emoji in rows or []:
+        try:
+            rk = int(rating_key)
+        except (TypeError, ValueError):
+            continue
+        em = str(emoji or "").strip()
+        if not em:
+            continue
+        out[rk] = em
+    return out
 
 
 def _norm_key(s: str) -> str:
@@ -534,6 +859,203 @@ def get_users_who_rated_same_subject(
             }
         )
     return out
+
+
+def get_ratings_for_subject(
+    *,
+    exclude_rating_key: int,
+    mbid: str | None,
+    rating_type: str,
+    rating_name: str,
+    content_artist: str | None,
+    limit: int = 50,
+    offset: int = 0,
+    order: str = "recent",
+) -> list[tuple]:
+
+    mbid = (mbid or "").strip()
+    rating_type = (rating_type or "").strip()
+    rating_name = (rating_name or "").strip()
+    content_artist = (content_artist or "").strip()
+
+    if not rating_type or not rating_name:
+        return []
+
+    order = (order or "").strip().lower()
+    if order not in {"recent", "oldest"}:
+        order = "recent"
+    order_clause = "DESC" if order == "recent" else "ASC"
+
+    params: list[Any] = [int(exclude_rating_key)]
+    where = ""
+    if mbid:
+        where = """
+                WHERE rating_key != ?
+                    AND (
+                        mbid = ?
+                        OR (
+                            LOWER(TRIM(rating_type)) = LOWER(TRIM(?))
+                            AND LOWER(TRIM(rating_name)) = LOWER(TRIM(?))
+                            AND (
+                                LOWER(TRIM(COALESCE(content_info_artist, ''))) = LOWER(TRIM(?))
+                                OR TRIM(?) = ''
+                                OR TRIM(COALESCE(content_info_artist, '')) = ''
+                            )
+                        )
+                    )
+                """
+        params.extend([mbid, rating_type, rating_name, content_artist, content_artist])
+    else:
+        where = """
+                WHERE rating_key != ?
+                    AND LOWER(TRIM(rating_type)) = LOWER(TRIM(?))
+                    AND LOWER(TRIM(rating_name)) = LOWER(TRIM(?))
+                    AND (
+                        LOWER(TRIM(COALESCE(content_info_artist, ''))) = LOWER(TRIM(?))
+                        OR TRIM(?) = ''
+                        OR TRIM(COALESCE(content_info_artist, '')) = ''
+                    )
+                """
+        params.extend([rating_type, rating_name, content_artist, content_artist])
+
+    params.extend([int(limit), int(offset)])
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute(
+        f"""
+                SELECT
+                        rating_key,
+                        rating_type,
+                        rating_name,
+                        lyrics_rating,
+                        beat_rating,
+                        flow_rating,
+                        melody_rating,
+                        cohesive_rating,
+                        user,
+                        image_url
+                FROM ratings
+                {where}
+                ORDER BY rating_key {order_clause}
+                LIMIT ?
+                OFFSET ?
+                """,
+        tuple(params),
+    )
+    rows = cur.fetchall()
+    conn.close()
+    return rows or []
+
+
+def get_ratings_for_artist_including_works(
+    *,
+    artist_name: str,
+    scope: str = "all",
+    limit: int = 50,
+    offset: int = 0,
+    order: str = "recent",
+) -> list[tuple]:
+
+    artist_name = strip_artist_features(artist_name)
+    if not artist_name:
+        return []
+
+    order = (order or "").strip().lower()
+    if order not in {"recent", "oldest"}:
+        order = "recent"
+    order_clause = "DESC" if order == "recent" else "ASC"
+
+    try:
+        limit_i = int(limit)
+    except (TypeError, ValueError):
+        limit_i = 50
+    limit_i = max(1, min(500, limit_i))
+
+    try:
+        offset_i = int(offset)
+    except (TypeError, ValueError):
+        offset_i = 0
+    offset_i = max(0, offset_i)
+
+    scope = (scope or "all").strip().lower()
+    if scope not in {"all", "artist", "albums", "songs"}:
+        scope = "all"
+
+    artist_match_sql = """
+        LOWER(TRIM(
+            RTRIM(
+                CASE
+                    WHEN instr(LOWER(COALESCE(content_info_artist, '')), '(feat') > 0 THEN substr(COALESCE(content_info_artist, ''), 1, instr(LOWER(COALESCE(content_info_artist, '')), '(feat') - 1)
+                    WHEN instr(LOWER(COALESCE(content_info_artist, '')), '[feat') > 0 THEN substr(COALESCE(content_info_artist, ''), 1, instr(LOWER(COALESCE(content_info_artist, '')), '[feat') - 1)
+                    WHEN instr(LOWER(COALESCE(content_info_artist, '')), '(ft') > 0 THEN substr(COALESCE(content_info_artist, ''), 1, instr(LOWER(COALESCE(content_info_artist, '')), '(ft') - 1)
+                    WHEN instr(LOWER(COALESCE(content_info_artist, '')), '[ft') > 0 THEN substr(COALESCE(content_info_artist, ''), 1, instr(LOWER(COALESCE(content_info_artist, '')), '[ft') - 1)
+                    WHEN instr(LOWER(COALESCE(content_info_artist, '')), '(featuring') > 0 THEN substr(COALESCE(content_info_artist, ''), 1, instr(LOWER(COALESCE(content_info_artist, '')), '(featuring') - 1)
+                    WHEN instr(LOWER(COALESCE(content_info_artist, '')), '[featuring') > 0 THEN substr(COALESCE(content_info_artist, ''), 1, instr(LOWER(COALESCE(content_info_artist, '')), '[featuring') - 1)
+                    WHEN instr(LOWER(COALESCE(content_info_artist, '')), ' feat.') > 0 THEN substr(COALESCE(content_info_artist, ''), 1, instr(LOWER(COALESCE(content_info_artist, '')), ' feat.') - 1)
+                    WHEN instr(LOWER(COALESCE(content_info_artist, '')), ' feat ') > 0 THEN substr(COALESCE(content_info_artist, ''), 1, instr(LOWER(COALESCE(content_info_artist, '')), ' feat ') - 1)
+                    WHEN instr(LOWER(COALESCE(content_info_artist, '')), ' ft.') > 0 THEN substr(COALESCE(content_info_artist, ''), 1, instr(LOWER(COALESCE(content_info_artist, '')), ' ft.') - 1)
+                    WHEN instr(LOWER(COALESCE(content_info_artist, '')), ' ft ') > 0 THEN substr(COALESCE(content_info_artist, ''), 1, instr(LOWER(COALESCE(content_info_artist, '')), ' ft ') - 1)
+                    WHEN instr(LOWER(COALESCE(content_info_artist, '')), ' featuring ') > 0 THEN substr(COALESCE(content_info_artist, ''), 1, instr(LOWER(COALESCE(content_info_artist, '')), ' featuring ') - 1)
+                    WHEN instr(LOWER(COALESCE(content_info_artist, '')), ' with ') > 0 THEN substr(COALESCE(content_info_artist, ''), 1, instr(LOWER(COALESCE(content_info_artist, '')), ' with ') - 1)
+                    WHEN instr(LOWER(COALESCE(content_info_artist, '')), ' w/ ') > 0 THEN substr(COALESCE(content_info_artist, ''), 1, instr(LOWER(COALESCE(content_info_artist, '')), ' w/ ') - 1)
+                    ELSE COALESCE(content_info_artist, '')
+                END,
+                ' ,-/\u2013\u2014()[]'
+            )
+        ))
+    """
+
+    if scope == "artist":
+        where_sql = "LOWER(TRIM(rating_type)) = 'artist' AND LOWER(TRIM(rating_name)) = LOWER(TRIM(?))"
+        params = (artist_name,)
+    elif scope == "albums":
+        where_sql = f"LOWER(TRIM(rating_type)) = 'album' AND {artist_match_sql} = LOWER(TRIM(?))"
+        params = (artist_name,)
+    elif scope == "songs":
+        where_sql = (
+            f"LOWER(TRIM(rating_type)) = 'song' AND {artist_match_sql} = LOWER(TRIM(?))"
+        )
+        params = (artist_name,)
+    else:
+        where_sql = f"""
+        (
+            LOWER(TRIM(rating_type)) = 'artist'
+            AND LOWER(TRIM(rating_name)) = LOWER(TRIM(?))
+        )
+        OR (
+            LOWER(TRIM(rating_type)) IN ('song', 'album')
+            AND {artist_match_sql} = LOWER(TRIM(?))
+        )
+        """
+        params = (artist_name, artist_name)
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute(
+        f"""
+        SELECT
+            rating_key,
+            rating_type,
+            rating_name,
+            lyrics_rating,
+            beat_rating,
+            flow_rating,
+            melody_rating,
+            cohesive_rating,
+            user,
+            image_url
+        FROM ratings
+        WHERE {where_sql}
+        ORDER BY rating_key {order_clause}
+        LIMIT ?
+        OFFSET ?
+        """,
+        tuple(list(params) + [int(limit_i), int(offset_i)]),
+    )
+    rows = cur.fetchall()
+    conn.close()
+    return rows or []
 
 
 def count_users_who_rated_same_subject(
@@ -805,7 +1327,9 @@ def get_subject_overall_summary(
     r_melody = _round(avg_melody)
     r_cohesive = _round(avg_cohesive)
 
-    components = [v for v in (r_lyrics, r_beat, r_flow, r_melody, r_cohesive) if v is not None]
+    components = [
+        v for v in (r_lyrics, r_beat, r_flow, r_melody, r_cohesive) if v is not None
+    ]
     overall_avg = round(sum(components) / len(components), 2) if components else None
 
     return {
@@ -957,6 +1481,7 @@ def delete_rating_comment(comment_id: int, author_user_id: int) -> bool:
 def add_rating(
     rating_type: str,
     rating_name: str,
+    rating_emoji: str | None,
     lyrics_rating: int,
     lyrics_reason: str,
     beat_rating: int,
@@ -972,14 +1497,23 @@ def add_rating(
     mbid: str | None = None,
     mb_url: str | None = None,
     content_artist: str | None = None,
+    extra_link: str | None = None,
+    extra_info: str | None = None,
 ):
+    rating_emoji = (rating_emoji or "").strip()
+    if rating_emoji:
+        rating_emoji = rating_emoji[:16]
+    else:
+        rating_emoji = None
+
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute(
-        "INSERT INTO ratings (rating_type, rating_name, lyrics_rating,lyrics_reason, beat_rating, beat_reason, flow_rating, flow_reason, melody_rating, melody_reason, cohesive_rating, cohesive_reason, user, image_url, mbid, mb_url, content_info_artist) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+        "INSERT INTO ratings (rating_type, rating_name, rating_emoji, lyrics_rating,lyrics_reason, beat_rating, beat_reason, flow_rating, flow_reason, melody_rating, melody_reason, cohesive_rating, cohesive_reason, user, image_url, mbid, mb_url, content_info_artist, extra_link, extra_info) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
         (
             rating_type,
             rating_name,
+            rating_emoji,
             lyrics_rating,
             lyrics_reason,
             beat_rating,
@@ -995,6 +1529,8 @@ def add_rating(
             (mbid or "").strip() or None,
             (mb_url or "").strip() or None,
             ((content_artist or "").strip()[:50]) or None,
+            (extra_link or "").strip()[:1000] or None,
+            (extra_info or "").strip()[:4000] or None,
         ),
     )
     rating_key = cur.lastrowid
@@ -1266,7 +1802,9 @@ def count_activity_feed_for_user(user_id: int, category: Optional[str] = None) -
         return 0
 
 
-def get_activity_feed_sig_for_user(user_id: int, category: Optional[str] = None) -> tuple[int, int, Optional[str]]:
+def get_activity_feed_sig_for_user(
+    user_id: int, category: Optional[str] = None
+) -> tuple[int, int, Optional[str]]:
 
     category = (category or "").strip().lower() or None
     params: list[Any] = [int(user_id), int(user_id)]
@@ -1403,11 +1941,13 @@ def update_rating(
     mbid: str | None = None,
     mb_url: str | None = None,
     content_artist: str | None = None,
+    extra_link: str | None = None,
+    extra_info: str | None = None,
 ):
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute(
-        "UPDATE ratings SET rating_type = ?, rating_name = ?, lyrics_rating = ?, lyrics_reason = ?, beat_rating = ?, beat_reason = ?, flow_rating = ?, flow_reason = ?, melody_rating = ?, melody_reason = ?, cohesive_rating = ?, cohesive_reason = ?, image_url = ?, mbid = ?, mb_url = ?, content_info_artist = ? WHERE rating_key = ?",
+        "UPDATE ratings SET rating_type = ?, rating_name = ?, lyrics_rating = ?, lyrics_reason = ?, beat_rating = ?, beat_reason = ?, flow_rating = ?, flow_reason = ?, melody_rating = ?, melody_reason = ?, cohesive_rating = ?, cohesive_reason = ?, image_url = ?, mbid = ?, mb_url = ?, content_info_artist = ?, extra_link = ?, extra_info = ? WHERE rating_key = ?",
         (
             rating_type,
             rating_name,
@@ -1425,11 +1965,34 @@ def update_rating(
             (mbid or "").strip() or None,
             (mb_url or "").strip() or None,
             ((content_artist or "").strip()[:50]) or None,
-            rating_key,
+            (extra_link or "").strip()[:1000] or None,
+            (extra_info or "").strip()[:4000] or None,
+            int(rating_key),
         ),
     )
     conn.commit()
     conn.close()
+
+
+def get_rating_extras_by_key(rating_key: int) -> tuple[str | None, str | None]:
+    conn = get_db_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute(
+            "SELECT extra_link, extra_info FROM ratings WHERE rating_key = ? LIMIT 1",
+            (int(rating_key),),
+        )
+        row = cur.fetchone()
+    except sqlite3.Error:
+        row = None
+    finally:
+        conn.close()
+    if not row:
+        return (None, None)
+    link, info = row
+    link = (link or "").strip() or None
+    info = (info or "").strip() or None
+    return (link, info)
 
 
 # Delete a rating
@@ -1943,6 +2506,154 @@ def get_reaction_counts_for_ratings(
         except (TypeError, ValueError):
             cnt = 0
         out.setdefault(rk, []).append((em, cnt))
+    return out
+
+
+def get_subject_rating_emoji_counts_for_rating_keys(
+    rating_keys: list[int],
+) -> dict[int, list[tuple[str, int]]]:
+    """For each rating_key in the list, return emoji counts across ALL ratings
+    that refer to the same subject (same MBID when present, otherwise fallback
+    to type+name+artist matching similar to subject pages).
+
+    Returns: {rating_key: [(emoji, count), ...]}
+    """
+
+    keys = [int(k) for k in (rating_keys or []) if k is not None]
+    if not keys:
+        return {}
+
+    keys = sorted(set(keys))
+    placeholders = ",".join(["?"] * len(keys))
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute(
+        f"""
+        WITH subjects AS (
+            SELECT
+                rating_key AS list_rk,
+                COALESCE(TRIM(mbid), '') AS mbid,
+                COALESCE(TRIM(rating_type), '') AS rating_type,
+                COALESCE(TRIM(rating_name), '') AS rating_name,
+                COALESCE(TRIM(content_info_artist), '') AS artist
+            FROM ratings
+            WHERE rating_key IN ({placeholders})
+        )
+        SELECT
+            s.list_rk,
+            rr.rating_emoji,
+            COUNT(1) AS c
+        FROM subjects s
+        JOIN ratings rr
+            ON (
+                (s.mbid != '' AND COALESCE(TRIM(rr.mbid), '') = s.mbid)
+                OR (
+                    LOWER(TRIM(COALESCE(rr.rating_type, ''))) = LOWER(TRIM(s.rating_type))
+                    AND LOWER(TRIM(COALESCE(rr.rating_name, ''))) = LOWER(TRIM(s.rating_name))
+                    AND (
+                        LOWER(TRIM(COALESCE(rr.content_info_artist, ''))) = LOWER(TRIM(s.artist))
+                        OR TRIM(s.artist) = ''
+                        OR TRIM(COALESCE(rr.content_info_artist, '')) = ''
+                    )
+                )
+            )
+        WHERE rr.rating_emoji IS NOT NULL
+          AND TRIM(rr.rating_emoji) != ''
+        GROUP BY s.list_rk, rr.rating_emoji
+        """,
+        tuple(keys),
+    )
+    rows = cur.fetchall()
+    conn.close()
+
+    out: dict[int, list[tuple[str, int]]] = {}
+    for list_rk, emoji, c in rows or []:
+        try:
+            rk = int(list_rk)
+        except (TypeError, ValueError):
+            continue
+        em = str(emoji or "").strip()
+        if not em:
+            continue
+        try:
+            cnt = int(c or 0)
+        except (TypeError, ValueError):
+            cnt = 0
+        out.setdefault(rk, []).append((em, cnt))
+
+    return out
+
+
+def get_top_subject_rating_emojis(
+    *,
+    mbid: str | None,
+    rating_type: str,
+    rating_name: str,
+    content_artist: str | None,
+    limit: int = 3,
+) -> list[str]:
+
+    mbid = (mbid or "").strip()
+    rating_type = (rating_type or "").strip()
+    rating_name = (rating_name or "").strip()
+    content_artist = (content_artist or "").strip()
+
+    if not rating_type or (not rating_name and not mbid):
+        return []
+
+    try:
+        n = int(limit)
+    except (TypeError, ValueError):
+        n = 3
+    n = max(1, min(10, n))
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+
+    if mbid:
+        cur.execute(
+            """
+            SELECT rating_emoji, COUNT(1) AS c
+            FROM ratings
+            WHERE TRIM(COALESCE(mbid, '')) = ?
+              AND rating_emoji IS NOT NULL
+              AND TRIM(rating_emoji) != ''
+            GROUP BY rating_emoji
+            ORDER BY c DESC, rating_emoji ASC
+            LIMIT ?
+            """,
+            (mbid, n),
+        )
+    else:
+        cur.execute(
+            """
+            SELECT r.rating_emoji, COUNT(1) AS c
+            FROM ratings r
+            WHERE LOWER(TRIM(COALESCE(r.rating_type, ''))) = LOWER(TRIM(?))
+              AND LOWER(TRIM(COALESCE(r.rating_name, ''))) = LOWER(TRIM(?))
+              AND (
+                LOWER(TRIM(COALESCE(r.content_info_artist, ''))) = LOWER(TRIM(?))
+                OR TRIM(?) = ''
+                OR TRIM(COALESCE(r.content_info_artist, '')) = ''
+              )
+              AND r.rating_emoji IS NOT NULL
+              AND TRIM(r.rating_emoji) != ''
+            GROUP BY r.rating_emoji
+            ORDER BY c DESC, r.rating_emoji ASC
+            LIMIT ?
+            """,
+            (rating_type, rating_name, content_artist, content_artist, n),
+        )
+
+    rows = cur.fetchall()
+    conn.close()
+
+    out: list[str] = []
+    for emoji, _c in rows or []:
+        em = str(emoji or "").strip()
+        if em:
+            out.append(em)
     return out
 
 
@@ -2642,6 +3353,35 @@ def get_profile_pic_by_username(username):
     row = cur.fetchone()
     conn.close()
     return row[0] if row and row[0] else None
+
+
+def get_profile_pics_by_usernames(usernames):
+    names = []
+    seen = set()
+    for username in usernames or []:
+        value = (username or "").strip()
+        if not value or value in seen:
+            continue
+        seen.add(value)
+        names.append(value)
+
+    if not names:
+        return {}
+
+    conn = get_db_connection()
+    cur = conn.cursor()
+    placeholders = ", ".join("?" for _ in names)
+    cur.execute(
+        f"SELECT username, profile_pic FROM user_info WHERE username IN ({placeholders})",
+        tuple(names),
+    )
+    rows = cur.fetchall()
+    conn.close()
+
+    result = {name: None for name in names}
+    for username, profile_pic in rows:
+        result[username] = profile_pic or None
+    return result
 
 
 ###############################################

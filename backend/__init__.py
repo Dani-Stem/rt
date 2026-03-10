@@ -17,32 +17,29 @@ def create_app():
         static_folder=str(BASE_DIR / "static"),
     )
 
-    # When running behind a reverse proxy (like Render), respect forwarded headers.
-    # This keeps request.host_url / scheme accurate.
-    app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)  # type: ignore[assignment]
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
 
     app.config["SECRET_KEY"] = os.environ.get("SECRET_KEY", "dev-secret-key")
 
-    # Uploads: default to a folder inside the repo for local dev, but allow overriding
-    # to a persistent disk path (e.g. /var/data/uploads) on Render.
-    upload_folder = os.environ.get("UPLOAD_FOLDER") or str(BASE_DIR / "static" / "uploads")
+    upload_folder = os.environ.get("UPLOAD_FOLDER") or str(
+        BASE_DIR / "static" / "uploads"
+    )
     app.config["UPLOAD_FOLDER"] = upload_folder
-    app.config["UPLOAD_URL_PREFIX"] = (os.environ.get("UPLOAD_URL_PREFIX") or "/uploads").rstrip("/")
+    app.config["UPLOAD_URL_PREFIX"] = (
+        os.environ.get("UPLOAD_URL_PREFIX") or "/uploads"
+    ).rstrip("/")
 
     try:
         Path(upload_folder).mkdir(parents=True, exist_ok=True)
     except Exception:
         pass
 
-    # Serve uploaded files from UPLOAD_FOLDER. We support both:
-    # - /uploads/... (new default)
-    # - /static/uploads/... (backwards compatible with older stored URLs)
     @app.route(f"{app.config['UPLOAD_URL_PREFIX']}/<path:filename>")
     def uploaded_file(filename: str):
         return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
 
     @app.route("/static/uploads/<path:filename>")
-    def uploaded_file_legacy(filename: str):
+    def uploaded_file_old(filename: str):
         return send_from_directory(app.config["UPLOAD_FOLDER"], filename)
 
     # Initialize database
